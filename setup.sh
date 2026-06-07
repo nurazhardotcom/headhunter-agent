@@ -17,7 +17,28 @@ fi
 if ! command -v typst &> /dev/null; then
     echo "📥 Installing Typst..."
     mkdir -p "$HOME/.local/bin"
-    curl -L -o /tmp/typst.tar.xz https://github.com/typst/typst/releases/download/v0.14.2/typst-x86_64-unknown-linux-musl.tar.xz
+    OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+    ARCH=$(uname -m)
+    
+    if [ "$OS" = "linux" ]; then
+        if [ "$ARCH" = "x86_64" ]; then
+            URL="https://github.com/typst/typst/releases/download/v0.14.2/typst-x86_64-unknown-linux-musl.tar.xz"
+        else
+            echo "⚠️ Unsupported Linux architecture: $ARCH. Please install typst manually."
+            exit 1
+        fi
+    elif [ "$OS" = "darwin" ]; then
+        if [ "$ARCH" = "arm64" ]; then
+            URL="https://github.com/typst/typst/releases/download/v0.14.2/typst-aarch64-apple-darwin.tar.xz"
+        else
+            URL="https://github.com/typst/typst/releases/download/v0.14.2/typst-x86_64-apple-darwin.tar.xz"
+        fi
+    else
+        echo "⚠️ Unsupported OS: $OS. Please install typst manually."
+        exit 1
+    fi
+
+    curl -L -o /tmp/typst.tar.xz "$URL"
     tar -xf /tmp/typst.tar.xz -C /tmp/ --strip-components=1
     mv /tmp/typst "$HOME/.local/bin/typst"
     chmod +x "$HOME/.local/bin/typst"
