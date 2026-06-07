@@ -1,0 +1,19 @@
+Company: Defence Collective Singapore
+Role: Senior Platform Security & Automation Engineer
+Location: Singapore (Hybrid)
+Description:
+We are looking for a Senior Platform Security & Automation Engineer to join our security team. 
+
+Key Responsibilities:
+- Design, configure, and maintain Privileged Access Management (PAM) tools like CyberArk to secure government and enterprise platforms.
+- Automate security compliance controls and policy configurations using modern scripting languages (Shell/Python).
+- Support Microsoft 365 identity security configurations, including Microsoft Entra ID and Conditional Access.
+- Implement Data Loss Prevention (DLP) protocols using Microsoft Purview.
+- Lead regular security audits and vulnerability scanning processes.
+
+Requirements:
+- 5+ years of experience in system engineering, cybersecurity, or platform security roles.
+- Expert-level Linux system administration skills (Arch/Debian/RedHat).
+- Strong hands-on experience operating CyberArk PAM (PVWA/PSM) and databases.
+- Familiarity with compliance standards like ISO 27001 and government security guidelines.
+- Self-motivated, with a focus on replacing manual tasks with automated pipeline controls.

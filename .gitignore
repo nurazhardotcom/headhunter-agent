@@ -1,0 +1,16 @@
+# API Keys & Secrets
+.env
+.envrc
+
+# Local database, tracker files, and evaluations
+data/
+reports/
+
+# Generated outputs and temp files
+output/
+resume_data.json
+
+# Personal Profile & CV (Exclude from public repo)
+cv.md
+config/profile.yml
+modes/_profile.md
