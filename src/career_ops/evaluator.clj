@@ -78,7 +78,7 @@
       (let [body (json/parse-string (:body response) true)
             text (-> body :candidates first :content :parts first :text)]
         text)
-      (throw (Exception. (str "API call failed with status " (:status response) ": " (:body response)))))))
+      (throw (ex-info "API call failed" {:status (:status response) :body (:body response)})))))
 
 (def agent1-prompt
   (str "You are career-ops, an AI-powered job search assistant.\n"
@@ -120,79 +120,45 @@
   (let [env (load-env)
         api-key (get env "GEMINI_API_KEY")]
     (if-not api-key
-      (do
-        (println "❌ Error: GEMINI_API_KEY not found in environment or .env file.")
-        (System/exit 1))
+      (throw (ex-info "GEMINI_API_KEY not found in environment or .env file" {}))
       (let [master-profile (load-master-profile)]
         (when-not master-profile
           (println "⚠️ Warning: data/master-profile.edn not found. Run 'bb profile --extract' first for better results."))
         
-        (println "\n==================================================================")
-        (println "  LOCAL MAS EVALUATOR - 3-STAGE PIPELINE")
-        (println "==================================================================\n")
-        
-        (try
-          ;; Stage 1
-          (print "🤖 Agent 1/3: Analyzing JD & Legitimacy... ")
-          (flush)
-          (let [stage1-text (call-gemini api-key agent1-prompt (str "JOB DESCRIPTION:\n" jd-text) model-name)
-                summary (parse-summary stage1-text)
-                company-name (get summary :company "Unknown")]
-            (println "Done.")
-            
-            ;; Stage 2
-            (print "🤖 Agent 2/3: Benchmarking & Fit Analysis... ")
-            (flush)
-            (let [stage2-text (call-gemini api-key agent2-prompt
-                                           (str "CANDIDATE MASTER PROFILE:\n" (pr-str master-profile) "\n\nJD CONTEXT:\n" stage1-text)
-                                           model-name)]
-              (println "Done.")
-              
-              ;; Stage 3
-              (print "🤖 Agent 3/3: Generating Company Deep Dive Memo... ")
-              (flush)
-              (let [stage3-text (call-gemini api-key agent3-prompt
-                                             (str "COMPANY: " company-name "\nJD:\n" jd-text)
-                                             model-name)]
-                (println "Done.\n")
-                
-                (let [full-report (str "### Stage 1: JD Analysis\n\n" stage1-text "\n\n"
-                                       "---\n### Stage 2: Fit Analysis & Go/No-Go\n\n" stage2-text "\n\n"
-                                       "---\n### Stage 3: Pre-Interview Cheat Sheet\n\n" stage3-text)]
-                  
-                  (println full-report)
-                  (println "\n==================================================================")
-                  
-                  (if summary
-                    (let [{:keys [company role score archetype legitimacy]} summary]
-                      (println (str "  Score: " score "/5  |  Archetype: " archetype "  |  Legitimacy: " legitimacy))
-                      (println "==================================================================\n")
-                      
-                      (if save-report?
-                        (let [reports-dir "reports"
-                              _ (.mkdirs (io/file reports-dir))
-                              num (next-report-num reports-dir)
-                              today (today-str)
-                              company-slug (slugify company)
-                              filename (str num "-" company-slug "-" today ".md")
-                              report-path (str reports-dir "/" filename)
-                              clean-eval (str/trim (str/replace full-report #"(?s)---SCORE_SUMMARY---.*?---END_SUMMARY---" ""))
-                              report-content (str "# Evaluation: " company " — " role "\n\n"
-                                                  "**Date:** " today "\n"
-                                                  "**Archetype:** " archetype "\n"
-                                                  "**Score:** " score "/5\n"
-                                                  "**Legitimacy:** " legitimacy "\n"
-                                                  "**PDF:** pending\n"
-                                                  "**Tool:** Babashka MAS Pipeline\n\n"
-                                                  "---\n\n"
-                                                  clean-eval "\n")]
-                          (spit report-path report-content)
-                          (println (str "✅ Report saved: " report-path))
-                          {:summary summary :report-path report-path :num num :today today})
-                        {:summary summary}))
-                    (do
-                      (println "⚠️ Warning: Could not parse machine-readable summary from Stage 1.")
-                      {})))))))
-          (catch Exception e
-            (println "\n❌ Error in MAS Pipeline:" (.getMessage e))
-            (System/exit 1)))))))
+        (let [stage1-text (call-gemini api-key agent1-prompt (str "JOB DESCRIPTION:\n" jd-text) model-name)
+              summary (parse-summary stage1-text)
+              company-name (get summary :company "Unknown")
+              stage2-text (call-gemini api-key agent2-prompt
+                                       (str "CANDIDATE MASTER PROFILE:\n" (pr-str master-profile) "\n\nJD CONTEXT:\n" stage1-text)
+                                       model-name)
+              stage3-text (call-gemini api-key agent3-prompt
+                                       (str "COMPANY: " company-name "\nJD:\n" jd-text)
+                                       model-name)
+              full-report (str "### Stage 1: JD Analysis\n\n" stage1-text "\n\n"
+                               "---\n### Stage 2: Fit Analysis & Go/No-Go\n\n" stage2-text "\n\n"
+                               "---\n### Stage 3: Pre-Interview Cheat Sheet\n\n" stage3-text)]
+          
+          (if summary
+            (let [{:keys [company role score archetype legitimacy]} summary]
+              (if save-report?
+                (let [reports-dir "reports"
+                      _ (.mkdirs (io/file reports-dir))
+                      num (next-report-num reports-dir)
+                      today (today-str)
+                      company-slug (slugify company)
+                      filename (str num "-" company-slug "-" today ".md")
+                      report-path (str reports-dir "/" filename)
+                      clean-eval (str/trim (str/replace full-report #"(?s)---SCORE_SUMMARY---.*?---END_SUMMARY---" ""))
+                      report-content (str "# Evaluation: " company " — " role "\n\n"
+                                          "**Date:** " today "\n"
+                                          "**Archetype:** " archetype "\n"
+                                          "**Score:** " score "/5\n"
+                                          "**Legitimacy:** " legitimacy "\n"
+                                          "**PDF:** pending\n"
+                                          "**Tool:** Babashka MAS Pipeline\n\n"
+                                          "---\n\n"
+                                          clean-eval "\n")]
+                  (spit report-path report-content)
+                  {:summary summary :report-path report-path :num num :today today :report full-report})
+                {:summary summary :report full-report}))
+            (throw (ex-info "Could not parse machine-readable summary from Stage 1." {:report full-report}))))))))

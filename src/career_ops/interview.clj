@@ -22,29 +22,16 @@
   (let [env (eval/load-env)
         api-key (get env "GEMINI_API_KEY")]
     (if-not api-key
-      (do
-        (println "❌ Error: GEMINI_API_KEY not found in environment or .env file.")
-        (System/exit 1))
+      (throw (ex-info "GEMINI_API_KEY not found in environment or .env file" {}))
       (let [stories (load-star-stories)]
         (if-not stories
-          (do
-            (println "❌ Error: data/star-stories.edn not found.")
-            (println "   Please run 'bb profile --extract <file>' first to build your Data Vault.")
-            (System/exit 1))
-          (do
-            (println "⏳ Generating Interview Prep Sheet based on your STAR stories...")
-            (let [user-prompt (str "CANDIDATE STAR STORIES:\n" (pr-str stories) "\n\nJOB DESCRIPTION:\n" jd-text)
-                  result-text (eval/call-gemini api-key interview-prep-system-prompt user-prompt "gemini-2.5-flash")]
-              (println "\n==================================================================")
-              (println "  INTERVIEW PREP STRATEGY")
-              (println "==================================================================\n")
-              (println result-text)
-              (println "\n==================================================================")
-              
-              (let [reports-dir "reports"
-                    _ (.mkdirs (io/file reports-dir))
-                    today (eval/today-str)
-                    filename (str "prep-" today "-" (System/currentTimeMillis) ".md")
-                    report-path (str reports-dir "/" filename)]
-                (spit report-path (str "# Interview Strategy & STAR Mapping\n**Date:** " today "\n\n---\n\n" result-text))
-                (println (str "✅ Prep Sheet saved: " report-path))))))))))
+          (throw (ex-info "data/star-stories.edn not found. Please extract your profile first." {}))
+          (let [user-prompt (str "CANDIDATE STAR STORIES:\n" (pr-str stories) "\n\nJOB DESCRIPTION:\n" jd-text)
+                result-text (eval/call-gemini api-key interview-prep-system-prompt user-prompt "gemini-2.5-flash")
+                reports-dir "reports"
+                _ (.mkdirs (io/file reports-dir))
+                today (eval/today-str)
+                filename (str "prep-" today "-" (System/currentTimeMillis) ".md")
+                report-path (str reports-dir "/" filename)]
+            (spit report-path (str "# Interview Strategy & STAR Mapping\n**Date:** " today "\n\n---\n\n" result-text))
+            {:report-path report-path :result result-text}))))))

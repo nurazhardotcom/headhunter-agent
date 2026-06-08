@@ -90,7 +90,13 @@
 
 (defn profile-cmd [& args]
   (if (and (= (first args) "--extract") (second args))
-    (profiler/extract-profile! (second args))
+    (try
+      (let [res (profiler/extract-profile! (second args))]
+        (println "✅ Successfully extracted Data Vault!")
+        (println "📂 Saved to data/master-profile.edn and data/star-stories.edn"))
+      (catch Exception e
+        (println (str "❌ Error: " (.getMessage e)))
+        (System/exit 1)))
     (do
       (println "Usage: bb profile --extract <path/to/raw-cv.txt>")
       (System/exit 1))))
@@ -98,23 +104,48 @@
 (defn evaluate-cmd [& args]
   (let [opts (parse-jd-args args)
         jd-text (get-jd-text opts)]
-    (let [result (eval/evaluate-jd jd-text
-                                   :model-name (:model-name opts)
-                                   :save-report? (:save-report? opts))]
-      (when (and (:save-report? opts) (:summary result))
+    (try
+      (println "⏳ Running 3-stage MAS pipeline...")
+      (let [result (eval/evaluate-jd jd-text
+                                     :model-name (:model-name opts)
+                                     :save-report? (:save-report? opts))]
+        (println "\n==================================================================")
+        (println (:report result))
+        (println "\n==================================================================")
         (let [summary (:summary result)
-              filename (last (str/split (:report-path result) #"/"))]
-          (tracker/add-entry! {:date (:today result)
-                               :company (:company summary)
-                               :role (:role summary)
-                               :score (:score summary)
-                               :report-link (str "[" (:num result) "](reports/" filename ")")
-                               :notes (str "3-Stage MAS (" (:model-name opts) ")")}))))))
+              score (:score summary)
+              archetype (:archetype summary)
+              legitimacy (:legitimacy summary)]
+          (println (str "  Score: " score "/5  |  Archetype: " archetype "  |  Legitimacy: " legitimacy))
+          (println "==================================================================\n")
+          (when (:report-path result)
+            (println (str "✅ Report saved: " (:report-path result))))
+          (when (and (:save-report? opts) (:summary result))
+            (let [filename (last (str/split (:report-path result) #"/"))]
+              (tracker/add-entry! {:date (:today result)
+                                   :company (:company summary)
+                                   :role (:role summary)
+                                   :score (:score summary)
+                                   :report-link (str "[" (:num result) "](reports/" filename ")")
+                                   :notes (str "3-Stage MAS (" (:model-name opts) ")")}))))
+        (catch Exception e
+          (println (str "❌ Error: " (.getMessage e)))
+          (System/exit 1))))))
 
 (defn interview-cmd [& args]
   (let [opts (parse-jd-args args)
         jd-text (get-jd-text opts)]
-    (interview/prep-interview! jd-text)))
+    (try
+      (let [res (interview/prep-interview! jd-text)]
+        (println "\n==================================================================")
+        (println "  INTERVIEW PREP STRATEGY")
+        (println "==================================================================\n")
+        (println (:result res))
+        (println "\n==================================================================")
+        (println (str "✅ Prep Sheet saved: " (:report-path res))))
+      (catch Exception e
+        (println (str "❌ Error: " (.getMessage e)))
+        (System/exit 1)))))
 
 (defn parse-pdf-args [args]
   (loop [remaining args

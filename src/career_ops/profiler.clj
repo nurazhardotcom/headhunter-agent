@@ -51,30 +51,25 @@
                            (str/replace #"```" "")
                            str/trim)]
         (json/parse-string clean-text true))
-      (throw (Exception. (str "API call failed with status " (:status response) ": " (:body response)))))))
+      (throw (ex-info "API call failed" {:status (:status response) :body (:body response)})))))
 
 (defn extract-profile! [file-path]
   (let [env (load-env)
         api-key (get env "GEMINI_API_KEY")]
     (if-not api-key
-      (do
-        (println "❌ Error: GEMINI_API_KEY not found in environment or .env file.")
-        (System/exit 1))
+      (throw (ex-info "GEMINI_API_KEY not found in environment or .env file" {}))
       (let [f (io/file file-path)]
         (if-not (.exists f)
-          (do
-            (println (str "❌ Error: File not found: " file-path))
-            (System/exit 1))
-          (do
-            (println "⏳ Extracting Deep Profile and STAR Stories from raw data...")
-            (let [raw-data (slurp f)
-                  result (call-gemini api-key deep-profiling-prompt raw-data "gemini-2.5-flash")]
-              (io/make-parents "data/master-profile.edn")
-              (with-open [w (io/writer "data/master-profile.edn")]
-                (binding [*out* w]
-                  (pprint/pprint (:master_profile result))))
-              (with-open [w (io/writer "data/star-stories.edn")]
-                (binding [*out* w]
-                  (pprint/pprint (:star_stories result))))
-              (println "✅ Successfully extracted Data Vault!")
-              (println "📂 Saved to data/master-profile.edn and data/star-stories.edn"))))))))
+          (throw (ex-info (str "File not found: " file-path) {}))
+          (let [raw-data (slurp f)
+                result (call-gemini api-key deep-profiling-prompt raw-data "gemini-2.5-flash")]
+            (io/make-parents "data/master-profile.edn")
+            (with-open [w (io/writer "data/master-profile.edn")]
+              (binding [*out* w]
+                (pprint/pprint (:master_profile result))))
+            (with-open [w (io/writer "data/star-stories.edn")]
+              (binding [*out* w]
+                (pprint/pprint (:star_stories result))))
+            {:status :success
+             :master-profile (:master_profile result)
+             :star-stories (:star_stories result)}))))))

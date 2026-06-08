@@ -1,34 +1,25 @@
-# Headhunter-Agent (Local Jack & Jill Command Center)
+# Headhunter-Agent (Local Desktop MAS Console)
 
-`headhunter-agent` has evolved from a generic ATS tailoring script into a **Local-First, Privacy-Preserving Multi-Agent System (MAS)** built for deep candidate profiling and strategic job evaluation. 
+`headhunter-agent` is a **Local-First, Privacy-Preserving Multi-Agent System (MAS)** built for deep candidate profiling, strategic job evaluation, and interview preparation. 
 
-It is designed to run entirely locally in your browser as a stateless Web GUI, using your own API key to ensure zero data leakage.
-
-## 🚀 Deployed Web GUI
-
-For a frictionless experience without terminal setup, use the Web GUI. It is completely static, serverless, and runs directly in the browser:
-
-👉 **Web URL**: [https://headhunter.nurazhar.com](https://headhunter.nurazhar.com)
-
-### How it works:
-1. **Stateless Runtime**: Built in ClojureScript Reagent and interpreted dynamically in-browser via **Scittle** (meaning zero Node compilation or build-tool overhead).
-2. **Local Storage**: Your Gemini API Key, Master Profile, and STAR Stories are saved only inside your browser's private `localStorage`.
-3. **In-Browser Typst Compilation**: Uses **Typst WebAssembly** (`typst.ts`) to render and compile ATS-friendly PDF resumes directly in the browser tab.
+It is designed to run entirely locally as a native **Clojure Desktop GUI** using **`cljfx` (JavaFX)**. No web browsers, no local web servers, and zero JavaScript bloat.
 
 ---
 
 ## 🧠 Core Features
 
 ### 1. The Data Vault (Deep Profiler & STAR Story Extraction)
-Instead of manually typing out a resume, you can paste unstructured LinkedIn data or raw CV text into the **Data Vault**. 
-- It uses Gemini to extract a highly structured `Master Profile`.
-- It parses your experience to automatically build an **8-12 STAR Story Library**, mapping out your Situations, Tasks, Actions, and Results for behavioral interviews.
+Instead of manually typing out a resume, you paste unstructured LinkedIn data or raw CV text into the **Data Vault**. 
+- Extracts a highly structured `Master Profile`.
+- Automatically builds an **8-12 STAR Story Library**, mapping out your Situations, Tasks, Actions, and Results for behavioral interviews.
+- Saves data locally as `.edn` files (`data/master-profile.edn` and `data/star-stories.edn`).
 
-### 2. Multi-Agent Evaluator (Company Deep Dives)
-Evaluating a Job Description triggers a 3-stage asynchronous agent pipeline:
-- **Agent 1 (Matcher):** Parses the JD, identifies the archetype, and checks MyCareersFuture legitimacy.
-- **Agent 2 (Benchmark):** Performs a brutal fit analysis, comparing your exact Master Profile gaps and strengths against the JD.
-- **Agent 3 (Deep Dive Memo):** Generates a pre-interview cheat sheet covering the company's business model, suspected tech stack, and suggests specific titles for cold outreach.
+### 2. Multi-Agent Evaluator (3-Stage Pipeline)
+Evaluating a Job Description triggers a sequential multi-agent pipeline:
+- **Agent 1 (Legitimacy):** Parses the JD and checks Fair Consideration Framework (FCF) legitimacy.
+- **Agent 2 (Fit Analysis):** Performs a brutal fit analysis, comparing your exact Master Profile gaps and strengths against the JD.
+- **Agent 3 (Cheat Sheet):** Generates a pre-interview cheat sheet covering the company's business model, suspected tech stack, and suggests specific titles for cold outreach.
+- Compiles the entire pipeline output into a Markdown report under `reports/`.
 
 ### 3. Interview Prep Center
 A dedicated engine that cross-references the current JD against your Data Vault's STAR Story Library.
@@ -37,25 +28,55 @@ A dedicated engine that cross-references the current JD against your Data Vault'
 
 ---
 
-## Philosophy
+## 🛠️ Installation & Setup
 
-* **Factual & Evidence-Based (No Hallucinations)**: The system restricts all outputs and evaluations to facts present in your Data Vault.
-* **Privacy by Design**: Your API keys and data are stored strictly on your machine.
-* **Aggregator, Not a Writer**: Instead of just rewriting resumes with ATS keywords, this acts as a deep strategic aggregator to prepare you for the entire hiring funnel—from initial fit analysis to the final interview.
+### Prerequisites
+1. **Java Development Kit (JDK 11 or higher)**.
+2. **Clojure CLI** (to run the Desktop GUI).
+3. **Babashka** (optional, for CLI fallbacks).
+
+### Setup
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/nurazhardotcom/headhunter-agent.git
+   cd headhunter-agent
+   ```
+2. Create a `.env` file in the root directory and add your Gemini API key:
+   ```env
+   GEMINI_API_KEY=your_actual_gemini_api_key_here
+   ```
 
 ---
 
-## 💻 Local Development
+## 🚀 How to Run
 
-If you wish to modify the application, you can run a local server:
+### 1. Launch the Native Desktop GUI
+Start the desktop application using Clojure:
+```bash
+clj -M:run
+```
+This opens a native desktop window with tabs for **Data Vault**, **Evaluate JD**, and **Interview Prep**. All data stays 100% local on your disk.
 
-1. Clone the repository.
-2. Ensure you have `python3` or `babashka` installed.
-3. Start a local server in the `docs/` directory:
-   ```bash
-   cd docs
-   python3 -m http.server 8000
-   # or with babashka:
-   # bb -Sdeps '{:deps {babashka/fs {:mvn/version "0.4.18"}}}' -e "(require '[babashka.process :refer [sh]]) (sh \"python3 -m http.server 8000\")"
-   ```
-4. Open `http://localhost:8000` in your browser.
+### 2. Run via Babashka CLI (Fallback)
+If you prefer running headless or automating via terminal:
+
+- **Extract Profile:**
+  ```bash
+  bb profile --extract /path/to/linkedin-dump.txt
+  ```
+- **Evaluate Job Description:**
+  ```bash
+  bb evaluate --file ./jds/defence-collective.txt
+  ```
+- **Generate Interview Strategy:**
+  ```bash
+  bb interview --file ./jds/defence-collective.txt
+  ```
+
+---
+
+## Philosophy
+
+* **Factual & Evidence-Based**: The system restricts evaluations and strategies strictly to the facts present in your local Data Vault.
+* **Privacy by Design**: Your API keys, Master Profile, and STAR stories are stored strictly as local files. No analytics, no tracking, no cloud databases.
+* **Zero Web Stack**: Desktop components are rendered natively, eliminating browser-based state management bugs and NPM dependency bloat.
