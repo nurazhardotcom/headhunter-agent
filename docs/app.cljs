@@ -45,7 +45,9 @@
     :pdf-url nil
     :pdf-filename ""
     :tracker (get-storage-item "hh_tracker" [])
-    :active-tab :evaluate}))
+    :master-profile (get-storage-item "hh_master_profile" nil)
+    :star-stories (get-storage-item "hh_star_stories" [])
+    :active-tab :data-vault}))
 
 ;; Telemetry helper
 (defn track-event! [event-name props]
@@ -81,6 +83,11 @@
         (.catch (fn [err]
                   (error-fn (.-message err)))))))
 
+(defn async-call-gemini! [api-key system-prompt user-prompt]
+  (js/Promise.
+   (fn [resolve reject]
+     (call-gemini! api-key system-prompt user-prompt resolve reject))))
+
 ;; =============================================================================
 ;; Prompts & Guidelines (Singapore Specialized Rubric)
 ;; =============================================================================
@@ -106,6 +113,27 @@
        "ARCHETYPE: <detected archetype>\n"
        "LEGITIMACY: <High Confidence | Proceed with Caution | Suspicious>\n"
        "---END_SUMMARY---"))
+
+(def fit-analysis-system-prompt
+  (str "You are an expert career strategist.\n"
+       "Compare the candidate's Master Profile against the parsed Job Description.\n"
+       "Provide a highly critical, 2-3 paragraph Fit Analysis.\n"
+       "Identify exact gaps (what they lack) and exact strengths (where they over-index).\n"
+       "End with a definitive GO or NO-GO recommendation for applying."))
+
+(def company-memo-system-prompt
+  (str "You are a specialized corporate researcher.\n"
+       "Generate a concise 'Pre-Interview Cheat Sheet' for the target company and role.\n"
+       "Include:\n"
+       "1. Business Model & Market Position (How they make money, main competitors).\n"
+       "2. Suspected Tech Stack & Operational Reality (Based on JD clues).\n"
+       "3. Cold Outreach Strategy: Identify 2 specific job titles the candidate should search for on LinkedIn to send a warm outreach message to (e.g., 'VP of Engineering', 'Director of Product'). Provide a 1-sentence outreach template.\n"))
+
+(def interview-prep-system-prompt
+  (str "You are an expert interview coach.\n"
+       "Using the candidate's Master Profile, STAR stories, and the Job Description, map the 5 most likely behavioral/technical interview questions for this specific role.\n"
+       "For each likely question, select the best STAR story from the candidate's library and explain WHY it fits and HOW to deliver it.\n"
+       "Provide actionable, hard-hitting advice on how to stand out."))
 
 (def tailoring-system-prompt
   (str "You are a professional ATS resume-tailoring agent.\n"
@@ -138,6 +166,24 @@
        "    }\n"
        "  ]\n"
        "}"))
+
+(def deep-profiling-system-prompt
+  (str "You are a world-class executive recruiter and profiler.\n"
+       "Extract a comprehensive 'Master Candidate Profile' from the provided raw text (LinkedIn export, raw CV, or notes).\n"
+       "You must identify the candidate's core competencies, full work history, education, and crucially, extract 8-12 STAR stories (Situation, Task, Action, Result) from their experience.\n"
+       "Output MUST be a single JSON object conforming to this schema:\n"
+       "{\n"
+       "  \"profile\": {\n"
+       "    \"summary\": \"Executive summary\",\n"
+       "    \"competencies\": [\"Tag 1\", \"Tag 2\"],\n"
+       "    \"experience\": [ { \"company\": \"\", \"role\": \"\", \"period\": \"\", \"location\": \"\", \"bullets\": [\"\"] } ],\n"
+       "    \"education\": [ { \"title\": \"\", \"org\": \"\", \"year\": \"\", \"desc\": \"\" } ]\n"
+       "  },\n"
+       "  \"star_stories\": [\n"
+       "    { \"title\": \"Short descriptive title\", \"situation\": \"\", \"task\": \"\", \"action\": \"\", \"result\": \"\" }\n"
+       "  ]\n"
+       "}"))
+
 
 ;; =============================================================================
 ;; Typst Template & Wasm Compilation
@@ -282,35 +328,93 @@
          :legitimacy (get pairs "LEGITIMACY" "Unknown")})
       nil)))
 
-(defn handle-evaluate! []
-  (let [api-key (:api-key @state)
-        cv (:cv-content @state)
-        jd (:current-jd @state)]
-    (if (or (empty? api-key) (empty? cv) (empty? jd))
-      (js/alert "Please configure your API key, CV, and paste a job description first!")
+(defn handle-deep-profiling! [raw-text]
+  (let [api-key (:api-key @state)]
+    (if (empty? api-key)
+      (js/alert "Please configure your API key in Settings first!")
       (do
-        (swap! state assoc :loading? true :loading-msg "Evaluating job description via Gemini...")
-        (track-event! "evaluation_started" {})
+        (swap! state assoc :loading? true :loading-msg "Extracting Deep Profile & STAR Stories...")
+        (track-event! "deep_profiling_started" {})
         (call-gemini!
          api-key
-         evaluation-system-prompt
-         (str "CANDIDATE CV:\n\n" cv "\n\n"
-              "CANDIDATE PROFILE:\n\n" (js/JSON.stringify (clj->js (:profile @state))) "\n\n"
-              "JOB DESCRIPTION:\n\n" jd)
+         deep-profiling-system-prompt
+         (str "RAW CANDIDATE DATA:\n\n" raw-text)
          (fn [res-text]
-           (let [summary (parse-score-summary res-text)]
-             (swap! state assoc 
-                    :loading? false 
-                    :evaluation {:text res-text :summary summary}
-                    :company-name (get summary :company ""))
-             (track-event! "evaluation_completed" 
-                           {:score (get summary :score)
-                            :archetype (get summary :archetype)
-                            :company (get summary :company)})))
+           (try
+             (let [clean-json (str/replace res-text #"(?s)^```json\n|\n```$" "")
+                   data (js->clj (js/JSON.parse clean-json) :keywordize-keys true)]
+               (swap! state assoc 
+                      :loading? false 
+                      :master-profile (:profile data)
+                      :star-stories (:star_stories data))
+               (set-storage-item! "hh_master_profile" (:profile data))
+               (set-storage-item! "hh_star_stories" (:star_stories data))
+               (js/alert "Deep Profile and STAR Stories extracted successfully!")
+               (track-event! "deep_profiling_success" {}))
+             (catch js/Error e
+               (swap! state assoc :loading? false)
+               (js/alert (str "Failed to parse JSON response: " (.-message e) "\nResponse: " res-text)))))
          (fn [err-msg]
            (swap! state assoc :loading? false)
-           (js/alert (str "Evaluation failed: " err-msg))
-           (track-event! "evaluation_failed" {:error err-msg})))))))
+           (js/alert (str "Deep Profiling failed: " err-msg))
+           (track-event! "deep_profiling_failed" {:error err-msg})))))))
+
+(defn handle-evaluate! []
+  (let [api-key (:api-key @state)
+        master (:master-profile @state)
+        jd (:current-jd @state)]
+    (if (or (empty? api-key) (empty? jd))
+      (js/alert "Please configure your API key and paste a job description first!")
+      (do
+        (swap! state assoc :loading? true :loading-msg "Agent 1/3: Analyzing JD & Legitimacy..."
+               :evaluation {:text "" :summary nil :memo ""})
+        (track-event! "evaluation_started" {})
+        
+        (-> (async-call-gemini! api-key evaluation-system-prompt (str "JOB DESCRIPTION:\n\n" jd))
+            (.then (fn [res-text]
+                     (let [summary (parse-score-summary res-text)]
+                       (swap! state assoc-in [:evaluation :summary] summary)
+                       (swap! state assoc-in [:evaluation :text] (str "### Stage 1: JD Analysis\n\n" res-text))
+                       (swap! state assoc :company-name (get summary :company "Unknown")
+                              :loading-msg "Agent 2/3: Benchmarking & Fit Analysis..."))
+                     (async-call-gemini! api-key 
+                                         fit-analysis-system-prompt
+                                         (str "CANDIDATE MASTER PROFILE:\n" (js/JSON.stringify (clj->js master)) "\n\nJD CONTEXT:\n" res-text))))
+            (.then (fn [fit-text]
+                     (swap! state update-in [:evaluation :text] #(str % "\n\n---\n### Stage 2: Fit Analysis & Go/No-Go\n\n" fit-text))
+                     (swap! state assoc :loading-msg "Agent 3/3: Generating Company Deep Dive Memo...")
+                     (async-call-gemini! api-key
+                                         company-memo-system-prompt
+                                         (str "COMPANY: " (:company-name @state) "\nJD:\n" jd))))
+            (.then (fn [memo-text]
+                     (swap! state assoc-in [:evaluation :memo] memo-text)
+                     (swap! state update-in [:evaluation :text] #(str % "\n\n---\n### Stage 3: Pre-Interview Cheat Sheet\n\n" memo-text))
+                     (swap! state assoc :loading? false)
+                     (track-event! "evaluation_completed" {})))
+            (.catch (fn [err]
+                      (swap! state assoc :loading? false)
+                      (js/alert (str "Evaluation pipeline failed: " err)))))))))
+
+(defn handle-interview-prep! []
+  (let [api-key (:api-key @state)
+        stories (:star-stories @state)
+        jd (:current-jd @state)]
+    (if (or (empty? api-key) (empty? jd) (empty? stories))
+      (js/alert "Please ensure API Key, Data Vault STAR stories, and a Job Description are present.")
+      (do
+        (swap! state assoc :loading? true :loading-msg "Mapping STAR stories to expected questions..."
+               :interview-prep {:text ""})
+        (-> (async-call-gemini!
+             api-key
+             interview-prep-system-prompt
+             (str "CANDIDATE STAR STORIES:\n" (js/JSON.stringify (clj->js stories)) "\n\nJOB DESCRIPTION:\n" jd))
+            (.then (fn [res-text]
+                     (swap! state assoc-in [:interview-prep :text] res-text)
+                     (swap! state assoc :loading? false)
+                     (track-event! "interview_prep_success" {})))
+            (.catch (fn [err]
+                      (swap! state assoc :loading? false)
+                      (js/alert (str "Interview prep failed: " err)))))))))
 
 (defn get-sg-today []
   (let [options (clj->js {:timeZone "Asia/Singapore"
@@ -396,6 +500,54 @@
 ;; Reagent UI Views (Aesthetic Dark Glassmorphism)
 ;; =============================================================================
 
+(defn data-vault-tab []
+  (let [raw-input (r/atom "")]
+    (fn []
+      [:div.max-w-6xl.mx-auto.p-6.grid.grid-cols-1.lg:grid-cols-12.gap-6
+       [:div.lg:col-span-5.space-y-6
+        [:div.glass-card.p-6.rounded-xl
+         [:h2.text-xl.font-serif.text-white.mb-4 "Deep Profiler"]
+         [:p.text-sm.text-slate-400.mb-4 "Paste your raw LinkedIn export, transcripts, or unformatted CV here. We will extract a Master Profile and build your STAR story library."]
+         [:textarea.w-full.h-80.bg-slate-900/80.border.border-slate-800.rounded-lg.p-4.text-sm.text-slate-300.focus:outline-none.focus:border-brand.no-scrollbar
+          {:placeholder "Paste raw experience data here..."
+           :value @raw-input
+           :on-change #(reset! raw-input (-> % .-target .-value))}]
+         [:button.w-full.mt-6.py-3.rounded-lg.bg-brand.hover:bg-brandDark.text-white.text-sm.font-semibold.flex.items-center.justify-center.space-x-2.transition-all
+          {:on-click #(handle-deep-profiling! @raw-input)}
+          [:i.fa-solid.fa-brain]
+          [:span "Extract Deep Profile"]]]]
+       
+       [:div.lg:col-span-7.space-y-6
+        (if-let [prof (:master-profile @state)]
+          [:div.glass-card.p-6.rounded-xl
+           [:h2.text-xl.font-serif.text-white.mb-4 "Master Profile Data"]
+           [:div.space-y-4
+            [:div.bg-slate-900/40.p-4.rounded-lg.border.border-slate-800
+             [:h3.text-sm.font-bold.text-brand.mb-2 "Summary"]
+             [:p.text-sm.text-slate-300 (:summary prof)]]
+            [:div.bg-slate-900/40.p-4.rounded-lg.border.border-slate-800
+             [:h3.text-sm.font-bold.text-brand.mb-2 "Competencies"]
+             [:div.flex.flex-wrap.gap-2
+              (for [c (:competencies prof)]
+                ^{:key c}
+                [:span.bg-slate-800.text-xs.px-2.py-1.rounded.text-slate-300 c])]]
+            (when (seq (:star-stories @state))
+              [:div.bg-slate-900/40.p-4.rounded-lg.border.border-slate-800
+               [:h3.text-sm.font-bold.text-brand.mb-2 (str "STAR Story Library (" (count (:star-stories @state)) " stories)")]
+               [:div.space-y-3.h-64.overflow-y-auto.no-scrollbar
+                (for [[idx story] (map-indexed vector (:star-stories @state))]
+                  ^{:key idx}
+                  [:div.border-l-2.border-brand.pl-3
+                   [:h4.text-xs.font-bold.text-white (:title story)]
+                   [:p.text-[10px].text-slate-400.mt-1 [:strong "S: "] (:situation story)]
+                   [:p.text-[10px].text-slate-400 [:strong "T: "] (:task story)]
+                   [:p.text-[10px].text-slate-400 [:strong "A: "] (:action story)]
+                   [:p.text-[10px].text-slate-400 [:strong "R: "] (:result story)]])]])]]
+          
+          [:div.glass-card.p-6.rounded-xl.h-full.flex.flex-col.items-center.justify-center.text-center.text-slate-500.py-24
+           [:i.fa-solid.fa-database.text-4xl.text-slate-700.mb-4]
+           [:p.text-sm "Your Data Vault is empty. Paste your raw experience to the left to extract your Master Profile and STAR stories."]])]])))
+
 (defn header []
   [:header.glass-card.border-b.border-slate-800.sticky.top-0.z-40
    [:div.max-w-7xl.mx-auto.px-6.h-16.flex.items-center.justify-between
@@ -405,10 +557,12 @@
      [:span.bg-slate-800.text-xs.font-mono.px-2.py-0.5.rounded.text-slate-400 "v1.1.0 (SG)"]]
     
     [:nav.flex.space-x-1
-     (for [[tab label icon] [[:evaluate "Evaluate" "fa-solid fa-bolt"]
+     (for [[tab label icon] [[:data-vault "Data Vault" "fa-solid fa-database"]
+                             [:evaluate "Evaluate" "fa-solid fa-bolt"]
+                             [:interview "Interview Prep" "fa-solid fa-microphone"]
                              [:pdf "Tailor PDF" "fa-solid fa-file-pdf"]
                              [:tracker "Tracker" "fa-solid fa-columns"]
-                             [:profile "Profile Setup" "fa-solid fa-cog"]]]
+                             [:profile "Settings" "fa-solid fa-cog"]]]
        ^{:key tab}
        [:button.px-4.py-2.rounded-lg.text-sm.font-medium.flex.items-center.space-x-2.transition-all
         {:class (if (= (:active-tab @state) tab)
@@ -417,6 +571,74 @@
          :on-click #(swap! state assoc :active-tab tab)}
         [:i {:class icon}]
         [:span label]])]]])
+
+(defn profile-tab []
+  (let [prof (r/atom (:profile @state))
+        key-val (r/atom (:api-key @state))
+        cv-val (r/atom (:cv-content @state))]
+    (fn []
+      [:div.max-w-5xl.mx-auto.p-6.space-y-6
+       [:div.glass-card.p-6.rounded-xl
+        [:h2.text-xl.font-serif.text-white.mb-4 "Credentials & Core Configurations"]
+        [:div.space-y-4
+         [:div
+          [:label.block.text-xs.font-mono.text-slate-400.uppercase.mb-2 "Google Gemini API Key"]
+          [:input.w-full.bg-slate-900/80.border.border-slate-800.rounded-lg.px-4.py-2.5.text-sm.text-white.focus:outline-none.focus:border-brand
+           {:type "password"
+            :placeholder "paste phc_ or gemini api key here"
+            :value @key-val
+            :on-change #(reset! key-val (-> % .-target .-value))}]]]
+        
+        [:div.grid.grid-cols-1.md:grid-cols-2.gap-4.mt-6
+         [:div
+          [:label.block.text-xs.font-mono.text-slate-400.uppercase.mb-2 "Full Name"]
+          [:input.w-full.bg-slate-900/80.border.border-slate-800.rounded-lg.px-4.py-2.5.text-sm.text-white.focus:outline-none.focus:border-brand
+           {:type "text" :value (:name @prof) :on-change #(swap! prof assoc :name (-> % .-target .-value))}]
+          
+          [:label.block.text-xs.font-mono.text-slate-400.uppercase.mb-2.mt-4 "Email"]
+          [:input.w-full.bg-slate-900/80.border.border-slate-800.rounded-lg.px-4.py-2.5.text-sm.text-white.focus:outline-none.focus:border-brand
+           {:type "text" :value (:email @prof) :on-change #(swap! prof assoc :email (-> % .-target .-value))}]
+          
+          [:label.block.text-xs.font-mono.text-slate-400.uppercase.mb-2.mt-4 "Monthly Base Target (SGD)"]
+          [:input.w-full.bg-slate-900/80.border.border-slate-800.rounded-lg.px-4.py-2.5.text-sm.text-white.focus:outline-none.focus:border-brand
+           {:type "text" :value (:monthly-target @prof) :on-change #(swap! prof assoc :monthly-target (-> % .-target .-value))}]]
+         
+         [:div
+          [:label.block.text-xs.font-mono.text-slate-400.uppercase.mb-2 "Phone"]
+          [:input.w-full.bg-slate-900/80.border.border-slate-800.rounded-lg.px-4.py-2.5.text-sm.text-white.focus:outline-none.focus:border-brand
+           {:type "text" :value (:phone @prof) :on-change #(swap! prof assoc :phone (-> % .-target .-value))}]
+          
+          [:label.block.text-xs.font-mono.text-slate-400.uppercase.mb-2.mt-4 "Residency Status (MOM FCF)"]
+          [:input.w-full.bg-slate-900/80.border.border-slate-800.rounded-lg.px-4.py-2.5.text-sm.text-white.focus:outline-none.focus:border-brand
+           {:type "text" :value (:residency @prof) :on-change #(swap! prof assoc :residency (-> % .-target .-value))}]
+          
+          [:label.block.text-xs.font-mono.text-slate-400.uppercase.mb-2.mt-4 "AWS (13th Month) Expected?"]
+          [:select.w-full.bg-slate-900/80.border.border-slate-800.rounded-lg.px-4.py-2.5.text-sm.text-white.focus:outline-none.focus:border-brand
+           {:value (str (:aws-13th @prof))
+            :on-change #(swap! prof assoc :aws-13th (= (-> % .-target .-value) "true"))}
+           [:option {:value "true"} "Yes, expected standard"]
+           [:option {:value "false"} "No, flexible"]]]]]
+       
+       [:div.glass-card.p-6.rounded-xl
+        [:h2.text-xl.font-serif.text-white.mb-4 "Master CV Source (Markdown)"]
+        [:textarea.w-full.h-80.bg-slate-900/80.border.border-slate-800.rounded-lg.p-4.text-sm.font-mono.text-slate-300.focus:outline-none.focus:border-brand.no-scrollbar
+         {:placeholder "# CV -- My Name\n\n## Experience..."
+          :value @cv-val
+          :on-change #(reset! cv-val (-> % .-target .-value))}]
+        
+        [:div.flex.justify-end.space-x-4.mt-6
+         [:button.px-6.py-2.5.rounded-lg.bg-brand.hover:bg-brandDark.text-white.text-sm.font-semibold.transition-all
+          {:on-click (fn []
+                       (swap! state assoc 
+                              :api-key @key-val
+                              :cv-content @cv-val
+                              :profile @prof)
+                       (set-storage-item! "hh_api_key" @key-val)
+                       (set-storage-item! "hh_cv" @cv-val)
+                       (set-storage-item! "hh_profile" @prof)
+                       (js/alert "Core profile saved successfully!")
+                       (track-event! "profile_saved" {}))}
+          "Save Configuration"]]]])))
 
 (defn profile-tab []
   (let [prof (r/atom (:profile @state))
@@ -526,15 +748,32 @@
          {:on-click handle-add-to-tracker!}
          [:i.fa-solid.fa-folder-plus]
          [:span "Log to Application Board"]]
-        
         [:button.px-5.py-2.rounded-lg.bg-brand.hover:bg-brandDark.text-white.text-xs.font-semibold.flex.items-center.space-x-2.transition-all
-         {:on-click #(swap! state assoc :active-tab :pdf)}
-         [:span "Tailor Resume PDF"]
+         {:on-click #(swap! state assoc :active-tab :interview)}
+         [:span "Prep for Interview"]
          [:i.fa-solid.fa-arrow-right]]]]
       
       [:div.glass-card.p-6.rounded-xl.h-full.flex.flex-col.items-center.justify-center.text-center.text-slate-500.py-24
        [:i.fa-solid.fa-chart-pie.text-4xl.text-slate-700.mb-4]
        [:p.text-sm "Paste a Job Description and click Evaluate to start analyzing match scores and drafting interview behaviors."]])]])
+
+(defn interview-prep-tab []
+  [:div.max-w-4xl.mx-auto.p-6.space-y-6
+   [:div.glass-card.p-6.rounded-xl
+    [:h2.text-xl.font-serif.text-white.mb-4 "Interview Preparation & STAR Mapping"]
+    [:p.text-sm.text-slate-400.mb-6 "Generates likely interview questions based on the current JD and maps your Data Vault STAR stories to the best answers."]
+    
+    [:button.w-full.py-3.rounded-lg.bg-brand.hover:bg-brandDark.text-white.text-sm.font-semibold.flex.items-center.justify-center.space-x-2.transition-all
+     {:on-click handle-interview-prep!}
+     [:i.fa-solid.fa-microphone-lines]
+     [:span "Generate Interview Cheat Sheet"]]]
+   
+   (when-let [prep-text (get-in @state [:interview-prep :text])]
+     (when-not (empty? prep-text)
+       [:div.glass-card.p-6.rounded-xl.space-y-4
+        [:h3.text-lg.font-medium.text-white "Your Interview Strategy"]
+        [:div.prose.prose-invert.max-w-none.p-4.bg-slate-900/40.rounded-lg.border.border-slate-800/60
+         [:pre.whitespace-pre-wrap.font-sans.text-sm.text-slate-300 prep-text]]]))])
 
 (defn pdf-compiler-tab []
   [:div.max-w-4xl.mx-auto.p-6.space-y-6
@@ -682,7 +921,9 @@
    [header]
    [:main.flex-1.py-8
     (case (:active-tab @state)
+      :data-vault [data-vault-tab]
       :evaluate [evaluate-tab]
+      :interview [interview-prep-tab]
       :pdf      [pdf-compiler-tab]
       :tracker  [tracker-tab]
       :profile  [profile-tab])]
