@@ -81,7 +81,7 @@
       (throw (ex-info "API call failed" {:status (:status response) :body (:body response)})))))
 
 (def agent1-prompt
-  (str "You are career-ops, an AI-powered job search assistant.\n"
+  (str "You are headhunter-agent, an AI-powered job search assistant.\n"
        "Evaluate the provided Job Description.\n"
        "Check for Fair Consideration Framework (FCF) legitimacy and general red flags.\n"
        "Output a brief analysis, followed by this EXACT summary block at the very end:\n\n"

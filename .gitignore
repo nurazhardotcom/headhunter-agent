@@ -14,3 +14,6 @@ resume_data.json
 cv.md
 config/profile.yml
 modes/_profile.md
+
+# Clojure compiler cache
+.cpcache/

@@ -51,7 +51,7 @@
       (println "📭 Tracker is empty. Add evaluations to begin.")
       (do
         (println "\n==================================================================================================")
-        (println "  CAREER-OPS PIPELINE TRACKER")
+        (println "  HEADHUNTER-AGENT PIPELINE TRACKER")
         (println "==================================================================================================")
         (printf "%-4s | %-10s | %-25s | %-35s | %-6s | %-10s\n" "ID" "Date" "Company" "Role" "Score" "Status")
         (println "--------------------------------------------------------------------------------------------------")

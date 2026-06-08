@@ -9,7 +9,7 @@
 
 (defn print-help []
   (println "╔══════════════════════════════════════════════════════════════════╗")
-  (println "║      Local Jack & Jill — Clojure/Babashka MAS Edition            ║")
+  (println "║      Local Headhunter-Agent — Clojure/Babashka MAS Edition       ║")
   (println "╚══════════════════════════════════════════════════════════════════╝")
   (println "")
   (println "  Manage and automate your job search pipeline entirely in your terminal.")
