@@ -170,7 +170,7 @@
           {:fx/type :label :text evaluator-error :style "-fx-text-fill: #bf616a;"}
           
           :else
-          nil)]}]}
+          {:fx/type :label :text ""})]}]}
     {:fx/type :v-box
      :h-box/hgrow :always
      :spacing 15
@@ -225,7 +225,7 @@
           {:fx/type :label :text interview-error :style "-fx-text-fill: #bf616a;"}
           
           :else
-          nil)]}]}
+          {:fx/type :label :text ""})]}]}
     {:fx/type :v-box
      :h-box/hgrow :always
      :spacing 15
