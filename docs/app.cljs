@@ -364,7 +364,7 @@
            (let [typst-source (str typst-layout-function (json-to-typst-call tailored-json))]
              (-> (js/window.compileTypstToPdf typst-source)
                  (.then (fn [pdf-bytes]
-                          (let [blob (js/Blob. (cljs.core/array pdf-bytes) (clj->js {:type "application/pdf"}))
+                          (let [blob (js/Blob. (cljs.core/array [pdf-bytes]) (clj->js {:type "application/pdf"}))
                                 url (js/URL.createObjectURL blob)
                                 today (get-sg-today)
                                 slug (str/lower-case (str/replace company #"[^a-zA-Z0-9]+" "-"))
