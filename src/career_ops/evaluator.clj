@@ -2,7 +2,8 @@
   (:require [babashka.http-client :as http]
             [cheshire.core :as json]
             [clojure.java.io :as io]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [clojure.edn :as edn]))
 
 (defn load-env []
   (let [env-file (io/file ".env")
@@ -62,27 +63,56 @@
        :archetype (get pairs "ARCHETYPE" "Unknown")
        :legitimacy (get pairs "LEGITIMACY" "Unknown")})))
 
-(defn call-gemini [api-key system-prompt jd-text model-name]
+(defn call-gemini [api-key system-prompt user-prompt model-name]
   (let [url (str "https://generativelanguage.googleapis.com/v1beta/models/" model-name ":generateContent?key=" api-key)
         payload {:contents [{:parts [{:text system-prompt}
-                                     {:text (str "\n\nJOB DESCRIPTION TO EVALUATE:\n\n" jd-text)}]}]
+                                     {:text user-prompt}]}]
                  :generationConfig {:temperature 0.5
-                                    :maxOutputTokens 8192
-                                    :thinkingConfig {:thinkingBudget 0}}}
+                                    :maxOutputTokens 8192}}
         response (http/post url
                             {:headers {"Content-Type" "application/json"}
                              :body (json/generate-string payload)
-                             :timeout 60000
+                             :timeout 120000
                              :throw false})]
     (if (= 200 (:status response))
       (let [body (json/parse-string (:body response) true)
-            candidates (:candidates body)
-            first-candidate (first candidates)
-            content (:content first-candidate)
-            parts (:parts content)
-            first-part (first parts)]
-        (:text first-part))
+            text (-> body :candidates first :content :parts first :text)]
+        text)
       (throw (Exception. (str "API call failed with status " (:status response) ": " (:body response)))))))
+
+(def agent1-prompt
+  (str "You are career-ops, an AI-powered job search assistant.\n"
+       "Evaluate the provided Job Description.\n"
+       "Check for Fair Consideration Framework (FCF) legitimacy and general red flags.\n"
+       "Output a brief analysis, followed by this EXACT summary block at the very end:\n\n"
+       "---SCORE_SUMMARY---\n"
+       "COMPANY: <company name or \"Unknown\">\n"
+       "ROLE: <role title>\n"
+       "SCORE: <decimal, e.g. 4.6>\n"
+       "ARCHETYPE: <detected archetype>\n"
+       "LEGITIMACY: <High Confidence | Proceed with Caution | Suspicious>\n"
+       "---END_SUMMARY---"))
+
+(def agent2-prompt
+  (str "You are an expert career strategist.\n"
+       "Compare the candidate's Master Profile against the parsed Job Description.\n"
+       "Provide a highly critical, 2-3 paragraph Fit Analysis.\n"
+       "Identify exact gaps (what they lack) and exact strengths (where they over-index).\n"
+       "End with a definitive GO or NO-GO recommendation for applying."))
+
+(def agent3-prompt
+  (str "You are a specialized corporate researcher.\n"
+       "Generate a concise 'Pre-Interview Cheat Sheet' for the target company and role.\n"
+       "Include:\n"
+       "1. Business Model & Market Position (How they make money, main competitors).\n"
+       "2. Suspected Tech Stack & Operational Reality (Based on JD clues).\n"
+       "3. Cold Outreach Strategy: Identify 2 specific job titles the candidate should search for on LinkedIn to send a warm outreach message to (e.g., 'VP of Engineering', 'Director of Product'). Provide a 1-sentence outreach template.\n"))
+
+(defn load-master-profile []
+  (let [f (io/file "data/master-profile.edn")]
+    (if (.exists f)
+      (edn/read-string (slurp f))
+      nil)))
 
 (defn evaluate-jd [jd-text & {:keys [model-name save-report?]
                                :or {model-name "gemini-2.5-flash"
@@ -92,97 +122,77 @@
     (if-not api-key
       (do
         (println "❌ Error: GEMINI_API_KEY not found in environment or .env file.")
-        (println "   Please create a .env file in this directory and add:")
-        (println "   GEMINI_API_KEY=your_actual_api_key_here")
         (System/exit 1))
-      (do
-        (println "📂 Loading context files...")
-        (let [shared (read-file-with-fallback "modes/_shared.md" "modes/_shared.md")
-              oferta (read-file-with-fallback "modes/oferta.md" "modes/oferta.md")
-              cv (read-file-with-fallback "cv.md" "cv.md")
-              profile-yml (read-file-with-fallback "config/profile.yml" "config/profile.yml")
-              profile-md (read-file-with-fallback "modes/_profile.md" "modes/_profile.md")
+      (let [master-profile (load-master-profile)]
+        (when-not master-profile
+          (println "⚠️ Warning: data/master-profile.edn not found. Run 'bb profile --extract' first for better results."))
+        
+        (println "\n==================================================================")
+        (println "  LOCAL MAS EVALUATOR - 3-STAGE PIPELINE")
+        (println "==================================================================\n")
+        
+        (try
+          ;; Stage 1
+          (print "🤖 Agent 1/3: Analyzing JD & Legitimacy... ")
+          (flush)
+          (let [stage1-text (call-gemini api-key agent1-prompt (str "JOB DESCRIPTION:\n" jd-text) model-name)
+                summary (parse-summary stage1-text)
+                company-name (get summary :company "Unknown")]
+            (println "Done.")
+            
+            ;; Stage 2
+            (print "🤖 Agent 2/3: Benchmarking & Fit Analysis... ")
+            (flush)
+            (let [stage2-text (call-gemini api-key agent2-prompt
+                                           (str "CANDIDATE MASTER PROFILE:\n" (pr-str master-profile) "\n\nJD CONTEXT:\n" stage1-text)
+                                           model-name)]
+              (println "Done.")
               
-              system-prompt (str "You are career-ops, an AI-powered job search assistant.\n"
-                                 "You evaluate job offers against the user's CV using a structured A-G scoring system.\n\n"
-                                 "Your evaluation methodology is defined below. Follow it exactly.\n\n"
-                                 "=======================================================\n"
-                                 "SYSTEM CONTEXT (_shared.md)\n"
-                                 "=======================================================\n"
-                                 shared "\n\n"
-                                 "=======================================================\n"
-                                 "EVALUATION MODE (oferta.md)\n"
-                                 "=======================================================\n"
-                                 oferta "\n\n"
-                                 "=======================================================\n"
-                                 "CANDIDATE RESUME (cv.md)\n"
-                                 "=======================================================\n"
-                                 cv "\n\n"
-                                 "=======================================================\n"
-                                 "CANDIDATE PROFILE & TARGETS (config/profile.yml)\n"
-                                 "=======================================================\n"
-                                 profile-yml "\n\n"
-                                 "=======================================================\n"
-                                 "USER ARCHETYPES & NARRATIVE (_profile.md)\n"
-                                 "=======================================================\n"
-                                 profile-md "\n\n"
-                                 "=======================================================\n"
-                                 "IMPORTANT OPERATING RULES FOR THIS CLI SESSION\n"
-                                 "=======================================================\n"
-                                 "1. You do NOT have access to WebSearch, Playwright, or file writing tools.\n"
-                                 "   - For Block D (Comp research): provide salary estimates based on your training data, clearly noted as estimates.\n"
-                                 "   - For Block G (Legitimacy): analyze the JD text only; skip URL/page freshness checks.\n"
-                                 "   - Post-evaluation file saving is handled by the script, not by you.\n"
-                                 "2. Generate Blocks A through G in full, in English, unless the JD is in another language.\n"
-                                 "3. When generating markdown tables, keep the header separator rows extremely short, using exactly three hyphens (e.g., |---|---|). Do NOT output long lines of hyphens to align columns, as this causes token limits to be exceeded.\n"
-                                 "4. At the very end, output a machine-readable summary block in this exact format:\n\n"
-                                 "---SCORE_SUMMARY---\n"
-                                 "COMPANY: <company name or \"Unknown\">\n"
-                                 "ROLE: <role title>\n"
-                                 "SCORE: <global score as decimal, e.g. 3.8>\n"
-                                 "ARCHETYPE: <detected archetype>\n"
-                                 "LEGITIMACY: <High Confidence | Proceed with Caution | Suspicious>\n"
-                                 "---END_SUMMARY---")]
-          (println (str "🤖 Calling Gemini (" model-name ")..."))
-          (try
-            (let [eval-text (call-gemini api-key system-prompt jd-text model-name)
-                  summary (parse-summary eval-text)]
-              (println "\n==================================================================")
-              (println "  CAREER-OPS EVALUATION - Clojure/Babashka Edition")
-              (println "==================================================================\n")
-              (println eval-text)
-              (println "\n==================================================================")
-              
-              (if summary
-                (let [{:keys [company role score archetype legitimacy]} summary]
-                  (println (str "  Score: " score "/5  |  Archetype: " archetype "  |  Legitimacy: " legitimacy))
-                  (println "==================================================================\n")
+              ;; Stage 3
+              (print "🤖 Agent 3/3: Generating Company Deep Dive Memo... ")
+              (flush)
+              (let [stage3-text (call-gemini api-key agent3-prompt
+                                             (str "COMPANY: " company-name "\nJD:\n" jd-text)
+                                             model-name)]
+                (println "Done.\n")
+                
+                (let [full-report (str "### Stage 1: JD Analysis\n\n" stage1-text "\n\n"
+                                       "---\n### Stage 2: Fit Analysis & Go/No-Go\n\n" stage2-text "\n\n"
+                                       "---\n### Stage 3: Pre-Interview Cheat Sheet\n\n" stage3-text)]
                   
-                  (if save-report?
-                    (let [reports-dir "reports"
-                          _ (.mkdirs (io/file reports-dir))
-                          num (next-report-num reports-dir)
-                          today (today-str)
-                          company-slug (slugify company)
-                          filename (str num "-" company-slug "-" today ".md")
-                          report-path (str reports-dir "/" filename)
-                          clean-eval (str/trim (str/replace eval-text #"(?s)---SCORE_SUMMARY---.*?---END_SUMMARY---" ""))
-                          report-content (str "# Evaluation: " company " — " role "\n\n"
-                                              "**Date:** " today "\n"
-                                              "**Archetype:** " archetype "\n"
-                                              "**Score:** " score "/5\n"
-                                              "**Legitimacy:** " legitimacy "\n"
-                                              "**PDF:** pending\n"
-                                              "**Tool:** Babashka Gemini (" model-name ")\n\n"
-                                              "---\n\n"
-                                              clean-eval "\n")]
-                      (spit report-path report-content)
-                      (println (str "✅ Report saved: " report-path))
-                      {:summary summary :report-path report-path :num num :today today})
-                    {:summary summary}))
-                (do
-                  (println "⚠️ Warning: Could not parse machine-readable summary from evaluation.")
-                  {})))
-            (catch Exception e
-              (println "❌ Error calling Gemini API:" (.getMessage e))
-              (System/exit 1))))))))
+                  (println full-report)
+                  (println "\n==================================================================")
+                  
+                  (if summary
+                    (let [{:keys [company role score archetype legitimacy]} summary]
+                      (println (str "  Score: " score "/5  |  Archetype: " archetype "  |  Legitimacy: " legitimacy))
+                      (println "==================================================================\n")
+                      
+                      (if save-report?
+                        (let [reports-dir "reports"
+                              _ (.mkdirs (io/file reports-dir))
+                              num (next-report-num reports-dir)
+                              today (today-str)
+                              company-slug (slugify company)
+                              filename (str num "-" company-slug "-" today ".md")
+                              report-path (str reports-dir "/" filename)
+                              clean-eval (str/trim (str/replace full-report #"(?s)---SCORE_SUMMARY---.*?---END_SUMMARY---" ""))
+                              report-content (str "# Evaluation: " company " — " role "\n\n"
+                                                  "**Date:** " today "\n"
+                                                  "**Archetype:** " archetype "\n"
+                                                  "**Score:** " score "/5\n"
+                                                  "**Legitimacy:** " legitimacy "\n"
+                                                  "**PDF:** pending\n"
+                                                  "**Tool:** Babashka MAS Pipeline\n\n"
+                                                  "---\n\n"
+                                                  clean-eval "\n")]
+                          (spit report-path report-content)
+                          (println (str "✅ Report saved: " report-path))
+                          {:summary summary :report-path report-path :num num :today today})
+                        {:summary summary}))
+                    (do
+                      (println "⚠️ Warning: Could not parse machine-readable summary from Stage 1.")
+                      {})))))))
+          (catch Exception e
+            (println "\n❌ Error in MAS Pipeline:" (.getMessage e))
+            (System/exit 1)))))))

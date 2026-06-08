@@ -3,18 +3,26 @@
             [clojure.java.io :as io]
             [career-ops.evaluator :as eval]
             [career-ops.pdf :as pdf]
-            [career-ops.tracker :as tracker]))
+            [career-ops.tracker :as tracker]
+            [career-ops.profiler :as profiler]
+            [career-ops.interview :as interview]))
 
 (defn print-help []
   (println "╔══════════════════════════════════════════════════════════════════╗")
-  (println "║           career-ops — Clojure/Babashka Edition                  ║")
+  (println "║      Local Jack & Jill — Clojure/Babashka MAS Edition            ║")
   (println "╚══════════════════════════════════════════════════════════════════╝")
   (println "")
-  (println "  Manage and automate your job search pipeline entirely in Clojure.")
+  (println "  Manage and automate your job search pipeline entirely in your terminal.")
   (println "")
   (println "  TASKS")
+  (println "    bb profile --extract <file>")
+  (println "        Build your Data Vault (Master Profile & STAR Stories) from raw text.")
+  (println "")
   (println "    bb evaluate [options] <JD text>")
-  (println "        Evaluate a job description against your CV using Gemini.")
+  (println "        Run the 3-stage MAS pipeline to evaluate a JD against your Data Vault.")
+  (println "")
+  (println "    bb interview [options] <JD text>")
+  (println "        Generate an Interview Prep Sheet using your STAR Stories.")
   (println "")
   (println "    bb pdf <company-name> [options] <JD text>")
   (println "        Tailor your CV and compile a PDF resume via Typst.")
@@ -23,17 +31,18 @@
   (println "        Manage the job application tracker database.")
   (println "")
   (println "  OPTIONS")
-  (println "    --file <path>    Read JD from a text file instead of inline args")
+  (println "    --file <path>    Read JD/Data from a text file instead of inline args")
   (println "    --model <name>   Specify Gemini model (default: gemini-2.5-flash)")
   (println "    --no-save        Do not save the evaluation report file")
   (println "")
   (println "  EXAMPLES")
+  (println "    bb profile --extract ./my-linkedin-export.txt")
   (println "    bb evaluate --file ./jds/defence-collective.txt")
-  (println "    bb pdf \"Defence Collective\" --file ./jds/defence-collective.txt")
+  (println "    bb interview --file ./jds/defence-collective.txt")
   (println "    bb tracker list")
   (System/exit 0))
 
-(defn parse-evaluate-args [args]
+(defn parse-jd-args [args]
   (loop [remaining args
          opts {:save-report? true
                :model-name "gemini-2.5-flash"
@@ -63,9 +72,8 @@
           (recur (rest remaining)
                  (update opts :jd-text #(if (empty? %) arg (str % " " arg)))))))))
 
-(defn evaluate-cmd [& args]
-  (let [opts (parse-evaluate-args args)
-        jd-raw (if (:file opts)
+(defn get-jd-text [opts]
+  (let [jd-raw (if (:file opts)
                  (let [f (io/file (:file opts))]
                    (if (.exists f)
                      (str/trim (slurp f))
@@ -78,19 +86,35 @@
         (println "❌ Error: No Job Description provided.")
         (println "   Provide JD text as arguments or use --file <path>.")
         (System/exit 1))
-      (let [result (eval/evaluate-jd jd-text
-                                     :model-name (:model-name opts)
-                                     :save-report? (:save-report? opts))]
-        ;; If report was saved and we got a score summary, auto-log to tracker
-        (when (and (:save-report? opts) (:summary result))
-          (let [summary (:summary result)
-                filename (last (str/split (:report-path result) #"/"))]
-            (tracker/add-entry! {:date (:today result)
-                                 :company (:company summary)
-                                 :role (:role summary)
-                                 :score (:score summary)
-                                 :report-link (str "[" (:num result) "](reports/" filename ")")
-                                 :notes (str "Evaluated with Gemini " (:model-name opts))})))))))
+      jd-text)))
+
+(defn profile-cmd [& args]
+  (if (and (= (first args) "--extract") (second args))
+    (profiler/extract-profile! (second args))
+    (do
+      (println "Usage: bb profile --extract <path/to/raw-cv.txt>")
+      (System/exit 1))))
+
+(defn evaluate-cmd [& args]
+  (let [opts (parse-jd-args args)
+        jd-text (get-jd-text opts)]
+    (let [result (eval/evaluate-jd jd-text
+                                   :model-name (:model-name opts)
+                                   :save-report? (:save-report? opts))]
+      (when (and (:save-report? opts) (:summary result))
+        (let [summary (:summary result)
+              filename (last (str/split (:report-path result) #"/"))]
+          (tracker/add-entry! {:date (:today result)
+                               :company (:company summary)
+                               :role (:role summary)
+                               :score (:score summary)
+                               :report-link (str "[" (:num result) "](reports/" filename ")")
+                               :notes (str "3-Stage MAS (" (:model-name opts) ")")}))))))
+
+(defn interview-cmd [& args]
+  (let [opts (parse-jd-args args)
+        jd-text (get-jd-text opts)]
+    (interview/prep-interview! jd-text)))
 
 (defn parse-pdf-args [args]
   (loop [remaining args
@@ -170,7 +194,9 @@
   (let [command (first args)
         cmd-args (rest args)]
     (cond
+      (= command "profile")  (apply profile-cmd cmd-args)
       (= command "evaluate") (apply evaluate-cmd cmd-args)
+      (= command "interview") (apply interview-cmd cmd-args)
       (= command "pdf")      (apply pdf-cmd cmd-args)
       (= command "tracker")  (apply tracker-cmd cmd-args)
       (or (nil? command) (= command "help") (= command "--help") (= command "-h")) (print-help)
