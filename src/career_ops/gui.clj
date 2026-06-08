@@ -92,6 +92,7 @@
   {:fx/type :v-box
    :spacing 15
    :padding 20
+   :style "-fx-background-color: #2e3440;"
    :children
    [{:fx/type :label
      :text "1. Data Vault Builder"
@@ -133,6 +134,7 @@
   {:fx/type :h-box
    :spacing 15
    :padding 20
+   :style "-fx-background-color: #2e3440;"
    :children
    [{:fx/type :v-box
      :h-box/hgrow :always
@@ -187,6 +189,7 @@
   {:fx/type :h-box
    :spacing 15
    :padding 20
+   :style "-fx-background-color: #2e3440;"
    :children
    [{:fx/type :v-box
      :h-box/hgrow :always
@@ -244,8 +247,8 @@
    :width 1100
    :height 700
    :scene {:fx/type :scene
-           :style "-fx-background-color: #2e3440;"
            :root {:fx/type :tab-pane
+                  :style "-fx-background-color: #2e3440;"
                   :side :top
                   :tabs [{:fx/type :tab
                           :text "Data Vault"
