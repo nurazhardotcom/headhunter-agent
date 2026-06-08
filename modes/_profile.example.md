@@ -1,102 +1,58 @@
-# User Profile Context -- career-ops
+# User Profile Context -- career-ops (Singapore Edition)
 
 <!-- ============================================================
      THIS FILE IS YOURS. It will NEVER be auto-updated.
      
-     Customize everything here: your archetypes, narrative,
-     proof points, negotiation scripts, location policy.
+     Customize everything here: your SG archetypes, narrative,
+     proof points, negotiation scripts, CPF and AWS expectations.
      
      The system reads _shared.md (updatable) first, then this
      file (your overrides). Your customizations always win.
      ============================================================ -->
 
-## Your Target Roles
+## Your Target Roles in Singapore
 
-<!-- Replace these with YOUR target roles. Examples:
-     - Senior Backend Engineer / Staff Platform Engineer
-     - AI Product Manager / Technical PM
-     - Data Engineer / ML Engineer
-     - DevOps / SRE / Platform
-     Whatever you're optimizing for. -->
-
-| Archetype | Thematic axes | What they buy |
-|-----------|---------------|---------------|
-| **AI Platform / LLMOps Engineer** | Evaluation, observability, reliability, pipelines | Someone who puts AI in production with metrics |
-| **Agentic Workflows / Automation** | HITL, tooling, orchestration, multi-agent | Someone who builds reliable agent systems |
-| **Technical AI Product Manager** | GenAI/Agents, PRDs, discovery, delivery | Someone who translates business to AI product |
-| **AI Solutions Architect** | Hyperautomation, enterprise, integrations | Someone who designs end-to-end AI architectures |
-| **AI Forward Deployed Engineer** | Client-facing, fast delivery, prototyping | Someone who delivers AI solutions to clients fast |
-| **AI Transformation Lead** | Change management, adoption, org enablement | Someone who leads AI transformation in an org |
+| Archetype | Thematic axes | What they buy in SG |
+|-----------|---------------|---------------------|
+| **DevSecOps / Platform Security** | PAM (CyberArk), Entra ID, Purview DLP, Linux Administration | Someone who secures mission-critical enterprise systems and automates compliance |
+| **Security Architect / PAM Designer** | IAM governance, air-gapped system design, integrations | Someone who designs secure access controls and directory policies |
+| **IT Audit & Security Operations Lead** | Vulnerability scanning (Tenable), Guardium audits, government compliance | Someone who guarantees audit readiness and zero-tolerance security standards |
 
 ## Your Adaptive Framing
 
-<!-- Map YOUR projects to each archetype. Example:
-     | Platform / LLMOps | My monitoring dashboard project | article-digest.md |
-     | Agentic | My chatbot with HITL escalation | cv.md section 3 | -->
-
 | If the role is... | Emphasize about you... | Proof point sources |
 |-------------------|------------------------|---------------------|
-| Platform / LLMOps | Production systems builder, observability, evals | article-digest.md + cv.md |
-| Agentic / Automation | Multi-agent orchestration, HITL, reliability | article-digest.md + cv.md |
-| Technical AI PM | Product discovery, PRDs, metrics | cv.md + article-digest.md |
-| Solutions Architect | System design, integrations, enterprise-ready | article-digest.md + cv.md |
-| Forward Deployed Engineer | Fast delivery, client-facing, prototype to prod | cv.md + article-digest.md |
-| AI Transformation Lead | Change management, team enablement, adoption | cv.md + article-digest.md |
+| DevSecOps / Platform | Security automation, Linux scripting, policy configuration | cv.md + config/profile.yml |
+| Security Architect | IAM policies, conditional access controls, PAM design | cv.md |
+| IT Audit & Compliance | ISO 27001, Cyber Trust Mark Tier 3, air-gapped systems | cv.md |
 
 ## Your Exit Narrative
 
-<!-- Replace with YOUR story. This frames everything. -->
-
 Use the candidate's exit story from `config/profile.yml` to frame ALL content:
-- **In PDF Summaries:** Bridge from past to future
-- **In STAR stories:** Reference proof points from article-digest.md
-- **In Draft Answers:** The transition narrative appears in the first response
+- **In PDF Summaries:** Bridge from operational cybersecurity role to DevSecOps/Platform design.
+- **In STAR stories:** Reference government system security (ICA) and private-public security compliance.
 
 ## Your Cross-cutting Advantage
 
-<!-- What's your "signature move"? What do you do that others can't? -->
+Frame profile as **"Highly disciplined Platform Security Engineer with air-gapped government system experience and expert Linux scripting skills."**
 
-Frame profile as **"Technical builder with real-world proof"** that adapts framing to the role.
+## Your Comp Targets & CPF expectations
 
-## Your Portfolio / Demo
+* **Target Base:** Targeting monthly base salary specified in `config/profile.yml`.
+* **AWS:** Expecting 13th month / Annual Wage Supplement (AWS) as standard in permanent local contracts.
+* **CPF:** Fully aware that employer CPF contributions (up to 17% for citizens/PRs under 55) apply on top of the base salary. Contractor contracts should adjust base rates upwards by ~20% to offset the lack of employer CPF.
 
-<!-- If you have a live demo, dashboard, or public project:
-     url: https://yoursite.dev/demo
-     password: demo-2026
-     when_to_share: "LLMOps, AI Platform roles" -->
-
-If you have a live demo/dashboard (check profile.yml), offer access in applications for relevant roles.
-
-## Your Comp Targets
-
-<!-- Research comp ranges for YOUR target roles -->
-
-**General guidance:**
-- Use WebSearch for current market data (Glassdoor, Levels.fyi, Blind)
-- Frame by role title, not by skills
-- Contractor rates are typically 30-50% higher than employee base
-
-## Your Negotiation Scripts
-
-<!-- Adapt to YOUR situation, currency, location -->
+## Your Singapore Negotiation Scripts
 
 **Salary expectations:**
-> "Based on market data for this role, I'm targeting [RANGE from profile.yml]. I'm flexible on structure -- what matters is the total package and the opportunity."
+> "Based on local market data for this seniority in Singapore, I'm targeting a monthly base of [RANGE from profile.yml] with 13th-month AWS. I'm flexible on structure depending on the performance bonus and health benefits package."
 
-**Geographic discount pushback:**
-> "The roles I'm competitive for are output-based, not location-based. My track record doesn't change based on postal code."
+**CPF and Contract/Perm adjustments:**
+> "Since this is a contract position without employer CPF contributions, my target monthly rate is adjusted to [S$ rate + 20%] to account for the self-contribution offset and maintain parity with permanent roles."
 
-**When offered below target:**
-> "I'm comparing with opportunities in the [higher range]. I'm drawn to [company] because of [reason]. Can we explore [target]?"
+**Fair Consideration Framework (FCF) compliance query:**
+> "I noticed the role is listed on MyCareersFuture. As a Singapore Citizen, I'm fully available to start without any MOM work pass sponsorship or processing delays."
 
-## Your Location Policy
+## Your Location & Hybrid Policy
 
-<!-- Adapt to YOUR situation -->
-
-**In forms:**
-- Follow your actual availability from profile.yml
-- Specify timezone overlap in free-text fields
-
-**In evaluations (scoring):**
-- Remote dimension for hybrid outside your country: score **3.0** (not 1.0)
-- Only score 1.0 if JD says "must be on-site 4-5 days/week, no exceptions"
+* **Remote scoring:** Hybrid roles (2-3 days remote, rest in office) are the standard in SG. Remote dimension should score **5.0** for hybrid, and only drop to **3.0** if it's 100% on-site with zero flexibility.

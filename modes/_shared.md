@@ -32,8 +32,8 @@ The evaluation uses 6 blocks (A-F) with a global score of 1-5:
 |-----------|-----------------|
 | Match con CV | Skills, experience, proof points alignment |
 | North Star alignment | How well the role fits the user's target archetypes (from _profile.md) |
-| Comp | Salary vs market (5=top quartile, 1=well below) |
-| Cultural signals | Company culture, growth, stability, remote policy |
+| Comp | Salary vs market (SGD monthly/annual base, AWS, CPF; 5=top quartile, 1=well below) |
+| Cultural signals | Company culture, growth, stability, remote/hybrid policy (hybrid is standard 5.0) |
 | Red flags | Blockers, warnings (negative adjustments) |
 | **Global** | Weighted average of above |
 
@@ -56,20 +56,21 @@ Block G assesses whether a posting is likely a real, active opening. It does NOT
 
 | Signal | Source | Reliability | Notes |
 |--------|--------|-------------|-------|
-| Posting age | Page snapshot | High | Under 30d=good, 30-60d=mixed, 60d+=concerning (adjusted for role type) |
+| Listed on MyCareersFuture | MCF check | High | If listed on MCF (Ministry of Manpower portal), it complies with Fair Consideration Framework (FCF) |
+| Posting age / FCF advertising window | Page snapshot | High | Under 30d = good; FCF mandatory advertising period is 14 days |
 | Apply button active | Page snapshot | High | Direct observable fact |
 | Tech specificity in JD | JD text | Medium | Generic JDs correlate with ghost postings but also with poor writing |
 | Requirements realism | JD text | Medium | Contradictions are a strong signal, vagueness is weaker |
-| Recent layoff news | WebSearch | Medium | Must consider department, timing, and company size |
+| Recent layoff news | WebSearch | Medium | Must consider department, timing, and company size in SG |
 | Reposting pattern | scan-history.tsv | Medium | Same role reposted 2+ times in 90 days is concerning |
-| Salary transparency | JD text | Low | Jurisdiction-dependent, many legitimate reasons to omit |
-| Role-company fit | Qualitative | Low | Subjective, use only as supporting signal |
+| Salary transparency | JD text | Low | MCF listings require salary range disclosure (great legitimacy indicator) |
+| Role-company fit | Qualitative | Low | Subjective, use only as supporting SG context |
 
 **Ethical framing (MANDATORY):**
-- This helps users prioritize time on real opportunities
+- This helps users prioritize time on real opportunities in Singapore
 - NEVER present findings as accusations of dishonesty
 - Present signals and let the user decide
-- Always note legitimate explanations for concerning signals
+- Always note legitimate explanations for concerning signals (e.g. MOM compliance repostings)
 
 ## Archetype Detection
 

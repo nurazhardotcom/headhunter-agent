@@ -44,8 +44,8 @@
           (format "%03d" (inc (apply max files))))))))
 
 (defn today-str []
-  (.format (java.time.format.DateTimeFormatter/ofPattern "yyyy-MM-dd")
-           (java.time.LocalDate/now)))
+  (.format (java.time.format.DateTimeFormatter/ofPattern "dd-MM-yyyy")
+           (java.time.ZonedDateTime/now (java.time.ZoneId/of "Asia/Singapore"))))
 
 (defn parse-summary [evaluation-text]
   (when-let [summary-block (re-find #"(?s)---SCORE_SUMMARY---(.*?)---END_SUMMARY---" evaluation-text)]

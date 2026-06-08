@@ -47,11 +47,11 @@ Read `cv.md`. Create a table with each JD requirement mapped to exact lines in t
 ## Block D — Comp and Demand
 
 Use WebSearch for:
-- Current salaries for the role (Glassdoor, Levels.fyi, Blind)
-- Company's compensation reputation
-- Demand trend for the role
+- Current salaries for the role in Singapore in SGD (NodeFlair, MyCareersFuture, Glassdoor SG, Seedly)
+- Company's compensation reputation and standard SG benefits (AWS / 13th-month, variable bonus, employer CPF)
+- Demand trend for the role in Singapore
 
-Table with data and cited sources. If there is no data, state it instead of inventing.
+Table with data in SGD and cited sources. If there is no data, state it instead of inventing.
 
 ## Block E — Customization Plan
 
@@ -93,31 +93,34 @@ Analyze the job posting for signals that indicate whether this is a real, active
 
 ### Signals to analyze (in order):
 
-**1. Posting Freshness** (from Playwright snapshot, already captured in Step 0):
-- Date posted or "X days ago" -- extract from page
+**1. MyCareersFuture Listing (FCF Compliance)**:
+- Is the job advertised on MyCareersFuture (the national job portal)? Under MOM's Fair Consideration Framework (FCF), companies must advertise roles on MCF for at least 14 days before hiring EP/S-Pass holders. A listing on MCF is a strong indicator of a real, active opening compliant with local laws.
+
+**2. Posting Freshness**:
+- Date posted or "X days ago" -- extract from page (MOM FCF mandates a minimum 14-day advertising period)
 - Apply button state (active / closed / missing / redirects to generic page)
 - If URL redirected to generic careers page, note it
 
-**2. Description Quality** (from JD text):
+**3. Description Quality** (from JD text):
 - Does it name specific technologies, frameworks, tools?
-- Does it mention team size, reporting structure, or org context?
+- Does it mention team size, reporting structure, or org context in Singapore?
 - Are requirements realistic? (years of experience vs technology age)
 - Is there a clear scope for the first 6-12 months?
-- Is salary/compensation mentioned?
+- Is salary range mentioned (mandatory on MyCareersFuture)?
 - What ratio of the JD is role-specific vs generic boilerplate?
 - Any internal contradictions? (entry-level title + staff requirements, etc.)
 
-**3. Company Hiring Signals** (2-3 WebSearch queries, combine with Block D research):
-- Search: `"{company}" layoffs {year}` -- note date, scale, departments
-- Search: `"{company}" hiring freeze {year}` -- note any announcements
+**4. Company Hiring Signals** (2-3 WebSearch queries, combine with Block D research):
+- Search: `"{company}" layoffs Singapore {year}` -- note date, scale, departments
+- Search: `"{company}" hiring freeze Singapore {year}` -- note any announcements
 - If layoffs found: are they in the same department as this role?
 
-**4. Reposting Detection** (from scan-history.tsv):
+**5. Reposting Detection** (from scan-history.tsv):
 - Check if company + similar role title appeared before with a different URL
 - Note how many times and over what period
 
-**5. Role Market Context** (qualitative, no additional queries):
-- Is this a common role that typically fills in 4-6 weeks?
+**6. Role Market Context** (qualitative, no additional queries):
+- Is this a common role that typically fills in 4-6 weeks in Singapore?
 - Does the role make sense for this company's business?
 - Is the seniority level one that legitimately takes longer to fill?
 
@@ -130,10 +133,10 @@ Analyze the job posting for signals that indicate whether this is a real, active
 
 **Signals table:** Each signal observed with its finding and weight (Positive / Neutral / Concerning).
 
-**Context Notes:** Any caveats (niche role, government job, evergreen position, etc.) that explain potentially concerning signals.
+**Context Notes:** Any caveats (niche role, government job, evergreen position, MOM FCF compliance posting, etc.) that explain potentially concerning signals.
 
 ### Edge case handling:
-- **Government/academic postings:** Longer timelines are standard. Adjust thresholds (60-90 days is normal).
+- **Government/academic postings:** Longer timelines are standard in SG. Adjust thresholds (60-90 days is normal).
 - **Evergreen/continuous hire postings:** If the JD explicitly says "ongoing" or "rolling," note it as context -- this is not a ghost job, it is a pipeline role.
 - **Niche/executive roles:** Staff+, VP, Director, or highly specialized roles legitimately stay open for months. Adjust age thresholds accordingly.
 - **Startup / pre-revenue:** Early-stage companies may have vague JDs because the role is genuinely undefined. Weight description vagueness less heavily.
