@@ -57,7 +57,7 @@ graph TD
 
 For a frictionless experience without terminal setup, use the Web GUI. It is completely static, serverless, and runs directly in the browser:
 
-👉 **Web URL**: [https://nurazhardotcom.github.io/headhunter-agent/](https://nurazhardotcom.github.io/headhunter-agent/)
+👉 **Web URL**: [https://headhunter.nurazhar.com](https://headhunter.nurazhar.com)
 
 ### How it works:
 1. **Stateless Runtime**: Built in ClojureScript Reagent and interpreted dynamically in-browser via **Scittle** (meaning zero Node compilation or build-tool overhead).
