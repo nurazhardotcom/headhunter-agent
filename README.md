@@ -1,8 +1,30 @@
 # Headhunter-Agent (Clojure/Babashka + Typst)
 
-An AI-powered job search assistant and resume compiler running 100% locally in your terminal.
+An open-source, lightweight, terminal-based job search assistant and resume compiler running 100% locally. 
 
 Built using **Clojure (running on Babashka)** and **Typst** for typesetting, it evaluates job descriptions using the Google Gemini API, tracks application history in a local markdown database, and compiles tailored ATS-optimized resumes.
+
+> 💡 **Credits**: This project is a Clojure/Babashka port of the original **[career-ops](https://github.com/santifer/career-ops)** system built by [Santiago Fernández de Valderrama](https://santifer.io/about).
+
+---
+
+## Philosophy
+
+### Open Source, Seriously
+`headhunter-agent` has no paid tier, no waitlist, no account, and no telemetry. Your CV, your profile, and your application history never leave your machine unless you push them somewhere yourself. The system is MIT-licensed forever; you own the rubric, the prompts, and your data.
+
+### Factual & Evidence-Based (No Hallucinations)
+Unlike other tools that make up achievements, percentages, or skills to force a fit (making your resume look generic and untruthful), this system follows strict rules:
+* **No Exaggerations**: It is restricted strictly to the facts in your master `cv.md` file.
+* **Cites Evidence**: It maps JD requirements directly back to exact lines of proof in your CV.
+* **Job Legitimacy Checks**: It evaluates whether job postings are likely real, active openings, or potentially "ghost jobs" (based on freshness, company context, and tech specificity).
+
+---
+
+## What It Is Not
+* **Not an Auto-Applier**: The system evaluates, scores, generates, and tracks — but every submission is your decision. Nothing goes anywhere without your explicit approval.
+* **Not a Resume Builder**: You bring the resume you already have in Markdown, and the system makes sure each version compiled is optimized to the specific job.
+* **Not a Content Factory**: It is a pipeline. The boundary between system files and your private data is strictly defined and protected by the [DATA_CONTRACT.md](DATA_CONTRACT.md).
 
 ---
 
