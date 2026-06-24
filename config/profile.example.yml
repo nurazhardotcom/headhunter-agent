@@ -9,7 +9,7 @@ candidate:
   location: "Singapore"
   linkedin: "linkedin.com/in/alextan"
   portfolio_url: "https://alextan.dev"
-  github: "github.com/alextan"
+  gitlab: "gitlab.com/alextan"
   national_service: "Completed" # Options: Completed, Completed (NSFs), Exempted, N/A
 
 target_roles:

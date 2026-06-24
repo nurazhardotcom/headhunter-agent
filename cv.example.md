@@ -4,7 +4,7 @@
 **Email:** alex@example.com
 **LinkedIn:** linkedin.com/in/alexchen
 **Portfolio:** alexchen.dev
-**GitHub:** github.com/alexchen
+**GitLab:** gitlab.com/alexchen
 
 ## Professional Summary
 

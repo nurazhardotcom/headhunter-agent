@@ -38,7 +38,7 @@ A dedicated engine that cross-references the current JD against your Data Vault'
 ### Setup
 1. Clone the repository:
    ```bash
-   git clone https://github.com/nurazhardotcom/headhunter-agent.git
+   git clone https://gitlab.com/nurazhar/headhunter-agent.git
    cd headhunter-agent
    ```
 2. Create a `.env` file in the root directory and add your Gemini API key:

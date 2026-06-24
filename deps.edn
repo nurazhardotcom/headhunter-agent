@@ -3,5 +3,7 @@
         cljfx/cljfx {:mvn/version "1.9.3"}
         org.babashka/http-client {:mvn/version "0.4.23"}
         cheshire/cheshire {:mvn/version "5.13.0"}}
- :aliases
- {:run {:main-opts ["-m" "career-ops.gui"]}}}
+  :aliases
+  {:run  {:main-opts ["-m" "career-ops.gui"]}
+   :m2m {:extra-deps {org.babashka/http-server {:mvn/version "0.1.7"}}}
+   :daemon {:extra-deps {org.babashka/http-server {:mvn/version "0.1.7"}}}}}}

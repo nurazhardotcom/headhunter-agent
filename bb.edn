@@ -14,4 +14,10 @@
                        (apply (resolve 'career-ops.core/-main) "pdf" *command-line-args*))}
    tracker  {:doc "Display or update current pipeline status"
              :task (do (require 'career-ops.core)
-                       (apply (resolve 'career-ops.core/-main) "tracker" *command-line-args*))}}}
+                       (apply (resolve 'career-ops.core/-main) "tracker" *command-line-args*))}
+    m2m      {:doc "M2M Job Application Protocol: keygen / discover / fetch / apply / verify / serve"
+              :task (do (require 'career-ops.m2m.core)
+                        (apply (resolve 'career-ops.m2m.core/-main) *command-line-args*))}
+    daemon   {:doc "Daemon MCP Server: personal API for headhunter-agent"
+              :task (do (require 'career-ops.daemon.core)
+                        (apply (resolve 'career-ops.daemon.core/-main) *command-line-args*))}}}
