@@ -127,10 +127,10 @@
                                    :role (:role summary)
                                    :score (:score summary)
                                    :report-link (str "[" (:num result) "](reports/" filename ")")
-                                   :notes (str "3-Stage MAS (" (:model-name opts) ")")}))))
-        (catch Exception e
-          (println (str "❌ Error: " (.getMessage e)))
-          (System/exit 1))))))
+                                    :notes (str "3-Stage MAS (" (:model-name opts) ")")})))))
+          (catch Exception e
+            (println (str "❌ Error: " (.getMessage e)))
+            (System/exit 1)))))
 
 (defn interview-cmd [& args]
   (let [opts (parse-jd-args args)

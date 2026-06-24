@@ -3,7 +3,8 @@
 
   Uses the existing HTTP client infrastructure from babashka.http-client.
   Validates the response against the M2M JSON-LD schema."
-  (:require [babashka.http-client :as http]
+  (:require [clojure.string :as str]
+            [babashka.http-client :as http]
             [cheshire.core :as json]
             [career-ops.m2m.schema :as schema]
             [career-ops.m2m.crypto :as crypto]))
@@ -59,7 +60,7 @@
       (let [parsed (json/parse-string (:body response) true)]
         (if (vector? parsed)
           (map #(select-keys (schema/canonicalize-keys %)
-                             [:schema/title :schema/datePosted :@id])
+                              [:schema/title :schema/datePosted (keyword "@id")])
                parsed)
           []))
       (throw (ex-info (str "Failed to list postings: HTTP " (:status response))

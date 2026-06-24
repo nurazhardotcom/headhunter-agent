@@ -74,45 +74,36 @@
 
 (defn apply-cmd [& args]
   (let [job-url (first args)]
-    (if-not job-url
+    (if (nil? job-url)
       (println "Usage: bb bb-m2m apply <job-url> [--profile <path>]")
       (try
         (println (str "🎯 M2M Apply for: " job-url))
         (println "──────────────────────────────────────────")
-
         (println "\n1/5 🔍 Discovering employer endpoint...")
         (let [domain (-> job-url (java.net.URL.) .getHost)
-              endpoint-info (registry/discover domain)
-              _ (println (str "   → " (:endpoint endpoint-info)))]
-
+              endpoint-info (registry/discover domain)]
+          (println (str "   → " (:endpoint endpoint-info)))
           (println "2/5 📥 Fetching job posting...")
-          (let [posting (fetch/job-posting job-url)
-                _ (println (str "   → " (:title posting) " @ " (:company posting)))]
-
+          (let [posting (fetch/job-posting job-url)]
+            (println (str "   → " (:title posting) " @ " (:company posting)))
             (println "3/5 🧠 Evaluating fit (MAS pipeline)...")
-            (let [eval-result (eval/evaluate-jd (:description posting)
-                                                :save-report? true)
-                  summary (:summary eval-result)
-                  _ (println (str "   → Score: " (:score summary) "/5"))
-                  _ (println (str "   → Legitimacy: " (:legitimacy summary)))]
-
+            (let [eval-result (eval/evaluate-jd (:description posting) :save-report? true)
+                  summary (:summary eval-result)]
+              (println (str "   → Score: " (:score summary) "/5"))
+              (println (str "   → Legitimacy: " (:legitimacy summary)))
               (when (= "NO-GO" (:recommendation summary))
                 (println "   ⛔ NO-GO recommendation. Skipping submission.")
                 (println "   (use --force to override)")
                 (System/exit 0))
-
               (println "4/5 📄 Tailoring and compiling resume...")
-              (let [pdf-path (pdf/generate-pdf-resume (:description posting)
-                                                      :company-name (:company summary))
-                    _ (println (str "   → PDF: " pdf-path))]
-
+              (let [pdf-path (pdf/generate-pdf-resume (:description posting) :company-name (:company summary))]
+                (println (str "   → PDF: " pdf-path))
                 (println "5/5 ✍️ Signing and submitting application...")
                 (let [identity (crypto/load-identity)
                       pkg (submit/build-package posting pdf-path identity)
                       receipt (submit/send pkg (:endpoint endpoint-info))]
                   (println (str "✅ Submitted! Application ID: " (:application-id receipt)))
                   (println (str "   Status: " (:status receipt)))
-
                   (tracker/add-entry!
                    {:date (:today eval-result)
                     :company (:company summary)
@@ -121,14 +112,14 @@
                     :status "M2M Submitted"
                     :pdf pdf-path
                     :report-link (:report-path eval-result)
-                    :notes (str "M2M v1 | ID: " (:application-id receipt))})))))))
-        (catch Exception e
+                     :notes (str "M2M v1 | ID: " (:application-id receipt))}))))))
+         (catch Exception e
           (println (str "❌ Apply failed: " (.getMessage e)))
           (System/exit 1))))))
 
 (defn verify-cmd [& args]
   (let [pkg-file (first args)]
-    (if-not pkg-file
+    (if (nil? pkg-file)
       (println "Usage: bb bb-m2m verify <package-file>")
       (try
         (let [result (verify/package (slurp pkg-file))]

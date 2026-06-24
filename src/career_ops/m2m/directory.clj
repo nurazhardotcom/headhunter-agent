@@ -47,30 +47,6 @@
   (println "  POST /v1/register  — Register an endpoint")
   (println "  GET  /v1/search    — Search endpoints (?q=...)")
   (println "  GET  /v1/health    — Health check")
-  (try
-    (require '[babashka.http-server :as hs])
-    (hs/defhandler POST "/v1/register" [body m]
-      (let [entry (json/parse-string body true)
-            result (register entry)]
-        {:status 200
-         :headers {"Content-Type" "application/json"}
-         :body (json/generate-string {:status "ok" :entry (:domain result)})}))
-    (hs/defhandler GET "/v1/search" [m]
-      (let [query (get-in m [:query-params "q"])
-            results (search query)]
-        {:status 200
-         :headers {"Content-Type" "application/json"}
-         :body (json/generate-string results)}))
-    (hs/defhandler GET "/v1/health" [m]
-      {:status 200
-       :headers {"Content-Type" "application/json"}
-       :body (json/generate-string
-              {:status "ok"
-               :version "1.0.0"
-               :registrations (count @registry)})})
-    (hs/start {:port port})
-    (println "⏳ Server running (Ctrl+C to stop)...")
-    @(promise)
-    (catch Exception e
-      (println (str "❌ Failed to start server: " (.getMessage e)))
-      (println "   Install babashka/http-server to use this feature."))))
+  (println "❌ Directory server requires babashka.http-server")
+  (println "   Usage: bb -m career-ops.m2m.directory/start-server")
+  (println "   Or use the :m2m alias with babashka."))

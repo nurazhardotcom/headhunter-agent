@@ -33,7 +33,7 @@
         attachment (build-attachment pdf-path identity)
         package {:m2m/protocolVersion "1.0.0"
                  :m2m/timestamp (.toString (java.time.Instant/now))
-                 :m2m/jobPosting {:@id (get-in posting [:raw :@id] "unknown")
+                  :m2m/jobPosting {(keyword "@id") (get-in posting [:raw (keyword "@id")] "unknown")
                                   :m2m/digest (str "sha256:" (crypto/sha256 (pr-str posting)))}
                  :m2m/candidate {:m2m/profileDigest (str "sha256:" profile)
                                  :m2m/identityKey (:public-key identity)}

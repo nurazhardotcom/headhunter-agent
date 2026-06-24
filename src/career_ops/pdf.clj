@@ -1,9 +1,9 @@
 (ns career-ops.pdf
   (:require [babashka.http-client :as http]
-            [babashka.process :as proc]
             [cheshire.core :as json]
             [clj-yaml.core :as yaml]
             [clojure.java.io :as io]
+            [clojure.java.shell :as sh]
             [clojure.string :as str]
             [career-ops.evaluator :as eval]))
 
@@ -81,7 +81,7 @@
         pdf-filename (str "cv-" candidate-slug "-" company-slug "-" today ".pdf")
         pdf-path (str output-dir "/" pdf-filename)
         ; Compile typst
-        result (proc/sh "typst" "compile" "resume.typ" pdf-path)]
+        result (sh/sh "typst" "compile" "resume.typ" pdf-path)]
     (if (= 0 (:exit result))
       (do
         (println (str "🎉 Success! Tailored PDF generated at: " pdf-path))

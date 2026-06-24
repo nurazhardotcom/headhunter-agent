@@ -37,6 +37,7 @@
 (defn generate-identity
   "Generate a new Ed25519 keypair and persist to ~/.m2m/identity.edn.
   Returns {:private-key ... :public-key ... :key-id ...}."
+  []
   (let [kpg (KeyPairGenerator/getInstance "Ed25519")
         kp (.generateKeyPair kpg)
         priv (base64-encode (.getEncoded (.getPrivate kp)))

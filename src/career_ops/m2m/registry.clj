@@ -7,6 +7,7 @@
   DNS record format:
     _m2m-apply.example.com.  IN  TXT  \"m2m-p1;https://...;key=<b64>;\""
   (:require [clojure.string :as str]
+            [clojure.java.shell :as shell]
             [babashka.http-client :as http]
             [cheshire.core :as json]))
 
