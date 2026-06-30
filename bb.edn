@@ -1,23 +1,29 @@
- {:paths ["src"]
-  :tasks
-  {profile  {:doc "Extract Master Profile & STAR Stories from raw data"
-             :task (do (require 'career-ops.core)
-                       (apply (resolve 'career-ops.core/-main) "profile" *command-line-args*))}
-   evaluate {:doc "Evaluate a job description against your CV using 3-stage MAS"
-             :task (do (require 'career-ops.core)
-                       (apply (resolve 'career-ops.core/-main) "evaluate" *command-line-args*))}
-   interview {:doc "Generate Interview Prep Sheet based on STAR Stories"
+{:paths ["src"]
+   :tasks
+   {profile  {:doc "Extract Master Profile & STAR Stories from raw data"
               :task (do (require 'career-ops.core)
-                        (apply (resolve 'career-ops.core/-main) "interview" *command-line-args*))}
-   pdf      {:doc "Generate a tailored PDF resume from Typst template"
-             :task (do (require 'career-ops.core)
-                       (apply (resolve 'career-ops.core/-main) "pdf" *command-line-args*))}
-   tracker  {:doc "Display or update current pipeline status"
-             :task (do (require 'career-ops.core)
-                       (apply (resolve 'career-ops.core/-main) "tracker" *command-line-args*))}
-    m2m      {:doc "M2M Job Application Protocol: keygen / discover / fetch / apply / verify / serve"
+                        (apply (resolve 'career-ops.core/-main) "profile" *command-line-args*))}
+    evaluate {:doc "Evaluate a job description against your CV using 3-stage MAS"
+              :task (do (require 'career-ops.core)
+                        (apply (resolve 'career-ops.core/-main) "evaluate" *command-line-args*))}
+    interview {:doc "Generate Interview Prep Sheet based on STAR Stories"
+               :task (do (require 'career-ops.core)
+                         (apply (resolve 'career-ops.core/-main) "interview" *command-line-args*))}
+    pdf      {:doc "Generate a tailored PDF resume from Typst template"
+              :task (do (require 'career-ops.core)
+                        (apply (resolve 'career-ops.core/-main) "pdf" *command-line-args*))}
+    tracker  {:doc "Display or update current pipeline status"
+              :task (do (require 'career-ops.core)
+                        (apply (resolve 'career-ops.core/-main) "tracker" *command-line-args*))}
+     m2m      {:doc "M2M Job Application Protocol: keygen / discover / fetch / apply / verify / serve"
               :task (do (require 'career-ops.m2m.core)
                         (apply (resolve 'career-ops.m2m.core/-main) *command-line-args*))}
-    daemon   {:doc "Daemon MCP Server: personal API for headhunter-agent"
+     daemon   {:doc "Daemon MCP Server: personal API for headhunter-agent"
               :task (do (require 'career-ops.daemon.core)
-                        (apply (resolve 'career-ops.daemon.core/-main) *command-line-args*))}}}
+                        (apply (resolve 'career-ops.daemon.core/-main) *command-line-args*))}
+     apply-agent {:doc "Apply to a job using the 30-second pipeline (Gemini + Typst + Resend)"
+                  :task (do (require 'career-ops.core)
+                            (apply (resolve 'career-ops.core/-main) "apply-agent" *command-line-args*))}
+     apply    {:doc "Apply to a job using the 30-second pipeline (Gemini + Typst + Resend)"
+              :task (do (require 'career-ops.core)
+                        (apply (resolve 'career-ops.core/-main) "apply-agent" *command-line-args*))}}}
