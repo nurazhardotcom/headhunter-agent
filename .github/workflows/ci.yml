@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Cache Clojure deps
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.m2
+            ~/.gitlibs
+          key: ${{ runner.os }}-clj-${{ hashFiles('deps.edn') }}
+      - name: Install Clojure CLI
+        run: |
+          curl -L -o /tmp/install.sh https://github.com/clojure/brew-install/releases/latest/download/linux-install.sh
+          sudo bash /tmp/install.sh
+      - name: Show versions
+        run: clojure -M -e '(System/getProperty "java.version")'
+      - name: Smoke check (core namespace loads)
+        run: clojure -M -e "(require 'career-ops.core) (println :ok :career-ops.core-loaded)"

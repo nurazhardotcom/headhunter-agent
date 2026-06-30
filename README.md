@@ -1,5 +1,9 @@
 # Headhunter-Agent (Local Desktop MAS Console)
 
+[![CI](https://github.com/nurazhardotcom/headhunter-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/nurazhardotcom/headhunter-agent/actions/workflows/ci.yml)
+[![license: MIT](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
+
+
 `headhunter-agent` is a **Local-First, Privacy-Preserving Multi-Agent System (MAS)** built for deep candidate profiling, strategic job evaluation, and interview preparation. 
 
 It is designed to run entirely locally as a native **Clojure Desktop GUI** using **`cljfx` (JavaFX)**. No web browsers, no local web servers, and zero JavaScript bloat.
